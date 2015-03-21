@@ -1,6 +1,6 @@
 simplebayes
 ===========
-A naïve bayesian text classifier in memory.
+A memory-based naïve bayesian text classifier.
 -------------------------------------------
 ```
 This work is heavily inspired by the python "redisbayes" module found here:
@@ -14,9 +14,11 @@ attempting to train with very large sets of sample data.
 Installation
 ------------
 ```
+PIP:
 sudo pip install simplebayes
 ```
 ```
+GIT:
 sudo pip install git+git://github.com/hickeroar/simplebayes.git
 ```
 
