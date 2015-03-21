@@ -27,7 +27,7 @@ from simplebayes.categories import BayesCategories
 
 
 class SimpleBayes(object):
-    """A naïve bayesian text classifier in memory."""
+    """A memory-based, non-persistent naïve bayesian text classifier."""
 
     def __init__(self, tokenizer=None):
         self.categories = BayesCategories()
@@ -35,12 +35,24 @@ class SimpleBayes(object):
 
     @classmethod
     def tokenize_text(cls, text):
-        """Default tokenize method; can be overridden"""
+        """
+        Default tokenize method; can be overridden
+        :param text: the text we want to tokenize
+        :type text: str
+        :return: list of tokenized text
+        :rtype: list
+        """
         return [w for w in text.split() if len(w) > 2]
 
     @classmethod
     def count_token_occurrences(cls, words):
-        """creates a key/value set of word/count for a given sample of text"""
+        """
+        Creates a key/value set of word/count for a given sample of text
+        :param words: full list of all tokens, non-unique
+        :type words: list
+        :return: key/value pairs of words and their counts in the list
+        :rtype: dict
+        """
         counts = {}
         for word in words:
             if word in counts:
@@ -50,7 +62,13 @@ class SimpleBayes(object):
         return counts
 
     def train(self, category, text):
-        """Trains a category with a sample of text"""
+        """
+        Trains a category with a sample of text
+        :param category: the name of the category we want to train
+        :type category: str
+        :param text: the text we want to train the category with
+        :type text: str
+        """
         try:
             bayes_category = self.categories.get_category(category)
         except KeyError:
@@ -63,14 +81,26 @@ class SimpleBayes(object):
             bayes_category.train_token(word, count)
 
     def classify(self, text):
-        """Chooses the highest scoring category for a sample of text"""
+        """
+        Chooses the highest scoring category for a sample of text
+        :param text: sample text to classify
+        :type text: str
+        :return: the "winning" category
+        :rtype: str
+        """
         score = self.score(text)
         if not score:
             return None
         return sorted(score.iteritems(), key=lambda v: v[1])[-1][0]
 
     def score(self, text):
-        """Scores a sample of text"""
+        """
+        Scores a sample of text
+        :param text: sample text to score
+        :type text: str
+        :return: dict of scores per category
+        :rtype: dict
+        """
         occurs = self.count_token_occurrences(self.tokenizer(text))
         scores = {}
         for category, bayes_category in self.categories.get_categories().iteritems():

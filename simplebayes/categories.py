@@ -25,19 +25,28 @@ from simplebayes.category import BayesCategory
 
 
 class BayesCategories(object):
+    """Acts as a container for various bayes trained categories of content"""
 
-    categories = {}
+    def __init__(self):
+        self.categories = {}
 
     def add_category(self, name):
-        """Adds a bayes category that we can later train"""
+        """
+        Adds a bayes category that we can later train
+        :param name: name of the category
+        :type name: str
+        :return: the requested category
+        :rtype: BayesCategory
+        """
         category = BayesCategory(name)
         self.categories[name] = category
         return category
 
     def get_category(self, name):
         """
+        Returns the expected category. Will KeyError if non existant
         :param name: name of the category
-        :type name: BayesCategory
+        :type name: str
         :return: the requested category
         :rtype: BayesCategory
         """

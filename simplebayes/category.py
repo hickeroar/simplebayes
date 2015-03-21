@@ -21,34 +21,48 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-import xxhash
 
 
 class BayesCategory(object):
+    """
+    Represents a trainable category of content for bayesian classification
+    """
 
     def __init__(self, name):
         self.name = name
         self.tokens = {}
         self.tally = 0
 
-    @classmethod
-    def get_word_name(cls, word):
-        return xxhash.xxh32(word).hexdigest()
-
     def train_token(self, word, count):
-        word = self.get_word_name(word)
+        """
+        Trains a particular token (increases the weight/count of it)
+        :param word: the token we're going to train
+        :type word: str
+        :param count: the number of occurances in the sample
+        :type count: int
+        """
         if word not in self.tokens:
             self.tokens[word] = 0
         self.tokens[word] += count
         self.tally += count
 
     def get_token_count(self, word):
-        word = self.get_word_name(word)
+        """
+        Gets the count assosicated with a provided token/word
+        :param word: the token we're getting the weight of
+        :type word: str
+        :return: the weight/count of the token
+        :rtype: int
+        """
         try:
             return self.tokens[word]
         except KeyError:
             return 0
 
     def get_tally(self):
-        """Gets the tally of all types"""
+        """
+        Gets the tally of all types
+        :return: The total number of tokens
+        :rtype: int
+        """
         return self.tally

@@ -1,7 +1,7 @@
 simplebayes
 ===========
-A memory-based naïve bayesian text classifier.
-----------------------------------------------
+A memory-based, non-persistent naïve bayesian text classifier.
+--------------------------------------------------------------
 
 ::
 

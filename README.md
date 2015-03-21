@@ -1,7 +1,7 @@
 simplebayes
 ===========
-A memory-based naïve bayesian text classifier.
-----------------------------------------------
+A memory-based, non-persistent naïve bayesian text classifier.
+--------------------------------------------------------------
 ```
 This work is heavily inspired by the python "redisbayes" module found here:
 [https://github.com/jart/redisbayes] and [https://pypi.python.org/pypi/redisbayes]
