@@ -1,3 +1,19 @@
+simplebayes
+===========
+A Text Comprehension Engine in Python
+-------------------------------------
+```
+This work is heavily inspired by the python "redisbayes" module found here:
+(https://github.com/jart/redisbayes) and (https://pypi.python.org/pypi/redisbayes)
+
+I've elected to write this to alleviate the network/time requirements when
+using the bayesian classifier to classify large sets of text, or when
+attempting to train with very large sets of sample data.
+```
+
+LICENSE
+------
+```
 The MIT License (MIT)
 
 Copyright (c) 2015 Ryan Vennell
@@ -19,3 +35,8 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
+
+Python Package Requirements
+---------------------------
+1. xxhash

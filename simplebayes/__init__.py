@@ -20,17 +20,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-------------------------------------------------------------------------------
-
-This work is heavily inspired by the python "redisbayes" module found here:
-https://github.com/jart/redisbayes
- and
-https://pypi.python.org/pypi/redisbayes/0.1.3
-
-I've elected to rewrite this to alleviate the network/time requirements when
-using the bayesian classifier to classify large sets of text, or when
-attempting to train with very large sets of sample data.
 """
 import math
 from simplebayes.categories import BayesCategories
