@@ -4,13 +4,13 @@ from distutils.core import setup
 
 setup (
     name = 'simplebayes',
-    version = '1.0.2',
+    version = '1.0.3',
     py_modules = ['simplebayes'],
     url = 'https://github.com/hickeroar/simplebayes',
     author = 'Ryan Vennell',
     author_email = 'ryan.vennell@gmail.com',
     description = 'A memory-based naïve bayesian text classifier.',
-    long_description = open('README.md', 'r').read(),
+    long_description = open('README.rst', 'r').read(),
     license = open('LICENSE', 'r').read(),
     classifiers = [
         'Development Status :: 5 - Production/Stable',
@@ -26,3 +26,4 @@ setup (
         'xxhash',
     ],
 )
+# python ./setup.py sdist upload
