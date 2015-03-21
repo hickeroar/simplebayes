@@ -4,8 +4,7 @@ from distutils.core import setup
 
 setup (
     name = 'simplebayes',
-    version = '1.0.3',
-    py_modules = ['simplebayes'],
+    version = '1.0.4',
     url = 'https://github.com/hickeroar/simplebayes',
     author = 'Ryan Vennell',
     author_email = 'ryan.vennell@gmail.com',
@@ -25,5 +24,6 @@ setup (
     install_requires = [
         'xxhash',
     ],
+    packages = ['simplebayes'],
 )
 # python ./setup.py sdist upload
