@@ -1,9 +1,10 @@
 # coding: utf-8
+import setuptools
 from distutils.core import setup
 
 setup (
     name = 'simplebayes',
-    version = '1.0.0',
+    version = '1.0.2',
     py_modules = ['simplebayes'],
     url = 'https://github.com/hickeroar/simplebayes',
     author = 'Ryan Vennell',
