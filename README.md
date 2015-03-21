@@ -1,10 +1,10 @@
 simplebayes
 ===========
-A Text Comprehension Engine in Python
--------------------------------------
+A naïve bayesian text classifier in memory.
+-------------------------------------------
 
 This work is heavily inspired by the python "redisbayes" module found here:
-(https://github.com/jart/redisbayes) and (https://pypi.python.org/pypi/redisbayes)
+[https://github.com/jart/redisbayes] and [https://pypi.python.org/pypi/redisbayes]
 
 I've elected to write this to alleviate the network/time requirements when
 using the bayesian classifier to classify large sets of text, or when
