@@ -24,7 +24,7 @@ sudo pip install git+git://github.com/hickeroar/simplebayes.git
 
 Basic Usage
 -----------
-```
+```python
 import simplebayes
 bayes = simplebayes.SimpleBayes()
 
