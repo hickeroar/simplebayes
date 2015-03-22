@@ -2,6 +2,10 @@ simplebayes
 ===========
 A memory-based, non-persistent naïve bayesian text classifier.
 --------------------------------------------------------------
+[![Build Status](https://travis-ci.org/hickeroar/simplebayes.svg?branch=master)](https://travis-ci.org/hickeroar/simplebayes)
+[![Build Status](https://img.shields.io/badge/coverage-100%-brightgreen.svg?style=flat)](https://travis-ci.org/hickeroar/simplebayes)
+[![Build Status](https://img.shields.io/badge/pylint-10.00/10-brightgreen.svg?style=flat)](https://travis-ci.org/hickeroar/simplebayes)
+[![Build Status](https://img.shields.io/badge/flake8-passing-brightgreen.svg?style=flat)](https://travis-ci.org/hickeroar/simplebayes)
 ```
 This work is heavily inspired by the python "redisbayes" module found here:
 [https://github.com/jart/redisbayes] and [https://pypi.python.org/pypi/redisbayes]
