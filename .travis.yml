@@ -13,6 +13,6 @@ install:
   - python setup.py install
   - cd ..
 script:
-  - nosetests tests/test.py --with-coverage --cover-package=cahoots --cover-min-percentage 100
-  - flake8 cahoots tests web --benchmark
-  - pylint cahoots tests web
+  - nosetests tests/test.py --with-coverage --cover-package=simplebayes --cover-min-percentage 100
+  - flake8 simplebayes tests
+  - pylint simplebayes tests
