@@ -103,11 +103,14 @@ class SimpleBayes(object):
         """
         occurs = self.count_token_occurrences(self.tokenizer(text))
         scores = {}
-        for category, bayes_category in self.categories.get_categories().iteritems():
-            if bayes_category.get_tally() == 0:
+        for category, bayes_category in \
+                self.categories.get_categories().iteritems():
+            category_tally = bayes_category.get_tally()
+            if category_tally == 0:
                 continue
             scores[category] = 0.0
-            for word, count in occurs.iteritems():
+            for word, _ in occurs.iteritems():
                 score = bayes_category.get_token_count(word) or 0.1
-                scores[category] += math.log(float(score) / bayes_category.get_tally())
+                scores[category] += \
+                    math.log(float(score) / category_tally)
         return scores
