@@ -77,7 +77,7 @@ class SimpleBayes(object):
         tokens = self.tokenizer(text)
         occurrence_counts = self.count_token_occurrences(tokens)
 
-        for word, count in occurrence_counts.iteritems():
+        for word, count in occurrence_counts.items():
             bayes_category.train_token(word, count)
 
     def classify(self, text):
@@ -91,7 +91,7 @@ class SimpleBayes(object):
         score = self.score(text)
         if not score:
             return None
-        return sorted(score.iteritems(), key=lambda v: v[1])[-1][0]
+        return sorted(score.items(), key=lambda v: v[1])[-1][0]
 
     def score(self, text):
         """
@@ -104,12 +104,12 @@ class SimpleBayes(object):
         occurs = self.count_token_occurrences(self.tokenizer(text))
         scores = {}
         for category, bayes_category in \
-                self.categories.get_categories().iteritems():
+                self.categories.get_categories().items():
             category_tally = bayes_category.get_tally()
             if category_tally == 0:
                 continue
             scores[category] = 0.0
-            for word, _ in occurs.iteritems():
+            for word, _ in occurs.items():
                 score = bayes_category.get_token_count(word) or 0.1
                 scores[category] += \
                     math.log(float(score) / category_tally)

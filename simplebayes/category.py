@@ -54,10 +54,7 @@ class BayesCategory(object):
         :return: the weight/count of the token
         :rtype: int
         """
-        try:
-            return self.tokens[word]
-        except KeyError:
-            return 0
+        return self.tokens.get(word, 0)
 
     def get_tally(self):
         """
