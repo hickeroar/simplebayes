@@ -53,6 +53,7 @@ bayes.train('bad', 'fear death horror government zombie')
 bayes.persist_cache()
 # Next time we instantiate w/ the same cache_path,
 # the cached training data will be loaded
+# Cache file is '/my/cache/_simplebayes.pickle'
 ```
 
 License
