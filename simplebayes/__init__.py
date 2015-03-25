@@ -22,16 +22,25 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-import math
 from simplebayes.categories import BayesCategories
+import pickle
+import math
 
 
 class SimpleBayes(object):
     """A memory-based, non-persistent naïve bayesian text classifier."""
 
-    def __init__(self, tokenizer=None):
+    cache_file = '_simplebayes.pickle'
+
+    def __init__(self, tokenizer=None, cache_path=None):
         self.categories = BayesCategories()
         self.tokenizer = tokenizer or SimpleBayes.tokenize_text
+
+        if cache_path is not None:
+            self.cache_path = cache_path
+            self.cache_train()
+        else:
+            self.cache_path = '/tmp/'
 
     @classmethod
     def tokenize_text(cls, text):
@@ -114,3 +123,33 @@ class SimpleBayes(object):
                 scores[category] += \
                     math.log(float(score) / category_tally)
         return scores
+
+    def get_cache_location(self):
+        """
+        Gets the location of the cache file
+        """
+        filename = self.cache_path if \
+            self.cache_path[-1:] == '/' else \
+            self.cache_path + '/'
+        filename += self.cache_file
+        return filename
+
+    def cache_persist(self):
+        """
+        Saves the current trained data to the cache.
+        This is initiated by the program using this module
+        """
+        filename = self.get_cache_location()
+        pickle.dump(self.categories, open(filename, 'wb'))
+
+    def cache_train(self):
+        """
+        Loads the data for this trainer from a cache file
+        """
+        filename = self.get_cache_location()
+        categories = pickle.load(open(filename, 'rb'))
+
+        assert isinstance(categories, BayesCategories), \
+            "Cache data is either corrupt or invalid"
+
+        self.categories = categories
