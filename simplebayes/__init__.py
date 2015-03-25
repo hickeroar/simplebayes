@@ -28,7 +28,7 @@ import math
 
 
 class SimpleBayes(object):
-    """A memory-based, non-persistent naïve bayesian text classifier."""
+    """A memory-based, optional-persistence naïve bayesian text classifier."""
 
     cache_file = '_simplebayes.pickle'
 
@@ -144,7 +144,7 @@ class SimpleBayes(object):
 
     def cache_train(self):
         """
-        Loads the data for this trainer from a cache file
+        Loads the data for this classifier from a cache file
         """
         filename = self.get_cache_location()
         categories = pickle.load(open(filename, 'rb'))

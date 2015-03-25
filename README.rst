@@ -1,7 +1,7 @@
 simplebayes
 ===========
-A memory-based, non-persistent naïve bayesian text classifier.
---------------------------------------------------------------
+A memory-based, optional-persistence naïve bayesian text classifier.
+--------------------------------------------------------------------
 
 ::
 
@@ -40,4 +40,21 @@ Basic Usage
     assert bayes.classify('sloths are so cute i love them') == 'good'
     assert bayes.classify('i would fear a zombie and love the government') == 'bad'
 
-    print bayes.score('i fear god and love the government')
+    print bayes.score('i fear zombies and love the government')
+
+
+Cache Usage
+-----------
+
+::
+
+    import simplebayes
+    bayes = simplebayes.SimpleBayes(cache_path='/my/cache/')
+
+    bayes.train('good', 'sunshine drugs love sex lobster sloth')
+    bayes.train('bad', 'fear death horror government zombie')
+
+    bayes.persist_cache()
+    # Next time we instantiate w/ the same cache_path,
+    # the cached training data will be loaded.
+    # Cache file is '/my/cache/_simplebayes.pickle'
