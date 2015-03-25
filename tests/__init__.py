@@ -26,6 +26,8 @@ from simplebayes import SimpleBayes
 from simplebayes.categories import BayesCategories
 import unittest
 import mock
+import __builtin__
+import pickle
 
 
 class SimpleBayesTests(unittest.TestCase):
@@ -164,3 +166,35 @@ class SimpleBayesTests(unittest.TestCase):
         cat2_mock.get_token_count.assert_any_call('hello')
         cat2_mock.get_token_count.assert_any_call('world')
         cat2_mock.get_tally.assert_called_once_with()
+
+    @mock.patch.object(__builtin__, 'open')
+    @mock.patch.object(pickle, 'load')
+    def test_cache_functions(self, load_mock, open_mock):
+        categories = BayesCategories()
+        categories.categories = {'foo': 'bar'}
+
+        load_mock.return_value = categories
+        open_mock.return_value = 'opened'
+
+        sb = SimpleBayes(cache_path='foo')
+
+        open_mock.assert_called_once_with('foo/_simplebayes.pickle', 'rb')
+        load_mock.assert_called_once_with('opened')
+
+        self.assertEqual(sb.categories, categories)
+
+    @mock.patch.object(__builtin__, 'open')
+    @mock.patch.object(pickle, 'dump')
+    def test_persist_cache(self, dump_mock, open_mock):
+        open_mock.return_value = 'opened'
+
+        categories = BayesCategories()
+        categories.categories = {'foo': 'bar'}
+
+        sb = SimpleBayes()
+        sb.cache_path = '/tmp/'
+        sb.categories = categories
+        sb.cache_persist()
+
+        open_mock.assert_called_once_with('/tmp/_simplebayes.pickle', 'wb')
+        dump_mock.assert_called_once_with(categories, 'opened')
