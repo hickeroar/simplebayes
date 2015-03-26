@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup (
     name = 'simplebayes',
-    version = '1.1.0',
+    version = '1.2.0',
     url = 'https://github.com/hickeroar/simplebayes',
     author = 'Ryan Vennell',
     author_email = 'ryan.vennell@gmail.com',

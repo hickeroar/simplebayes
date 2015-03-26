@@ -28,6 +28,7 @@ import unittest
 import mock
 import __builtin__
 import pickle
+import os
 
 
 class SimpleBayesTests(unittest.TestCase):
@@ -169,19 +170,33 @@ class SimpleBayesTests(unittest.TestCase):
 
     @mock.patch.object(__builtin__, 'open')
     @mock.patch.object(pickle, 'load')
-    def test_cache_functions(self, load_mock, open_mock):
+    @mock.patch.object(os.path, 'exists')
+    def test_cache_train(self, exists_mock, load_mock, open_mock):
         categories = BayesCategories()
         categories.categories = {'foo': 'bar'}
 
         load_mock.return_value = categories
         open_mock.return_value = 'opened'
+        exists_mock.return_value = True
 
         sb = SimpleBayes(cache_path='foo')
+        sb.cache_train()
 
+        exists_mock.assert_called_once_with('foo/_simplebayes.pickle')
         open_mock.assert_called_once_with('foo/_simplebayes.pickle', 'rb')
         load_mock.assert_called_once_with('opened')
 
         self.assertEqual(sb.categories, categories)
+
+    @mock.patch.object(os.path, 'exists')
+    def test_cache_train_with_no_file(self, exists_mock):
+        exists_mock.return_value = False
+
+        sb = SimpleBayes()
+        result = sb.cache_train()
+
+        exists_mock.assert_called_once_with('/tmp/_simplebayes.pickle')
+        self.assertFalse(result)
 
     @mock.patch.object(__builtin__, 'open')
     @mock.patch.object(pickle, 'dump')

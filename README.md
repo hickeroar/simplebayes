@@ -17,13 +17,8 @@ attempting to train with very large sets of sample data.
 
 Installation
 ------------
-```
-PIP:
+```bash
 sudo pip install simplebayes
-```
-```
-GIT:
-sudo pip install git+git://github.com/hickeroar/simplebayes.git
 ```
 
 Basic Usage
@@ -46,15 +41,29 @@ Cache Usage
 ```python
 import simplebayes
 bayes = simplebayes.SimpleBayes(cache_path='/my/cache/')
-
-bayes.train('good', 'sunshine drugs love sex lobster sloth')
-bayes.train('bad', 'fear death horror government zombie')
-
-bayes.persist_cache()
-# Next time we instantiate w/ the same cache_path,
-# the cached training data will be loaded
 # Cache file is '/my/cache/_simplebayes.pickle'
+# Default cache_path is '/tmp/'
+
+if not bayes.cache_train():
+    # Unable to load cache data, so we're training it
+    bayes.train('good', 'sunshine drugs love sex lobster sloth')
+    bayes.train('bad', 'fear death horror government zombie')
+
+    # Saving the cache so next time the training won't be needed
+    bayes.persist_cache()
 ```
+
+Tokenizer Override
+------------------
+```python
+import simplebayes
+
+def my_tokenizer(sample):
+    return sample.split()
+
+bayes = simplebayes.SimpleBayes(tokenizer=my_tokenizer)
+```
+
 
 License
 -------

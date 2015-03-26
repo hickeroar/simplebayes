@@ -25,6 +25,7 @@ SOFTWARE.
 from simplebayes.categories import BayesCategories
 import pickle
 import math
+import os
 
 
 class SimpleBayes(object):
@@ -32,15 +33,10 @@ class SimpleBayes(object):
 
     cache_file = '_simplebayes.pickle'
 
-    def __init__(self, tokenizer=None, cache_path=None):
+    def __init__(self, tokenizer=None, cache_path='/tmp/'):
         self.categories = BayesCategories()
         self.tokenizer = tokenizer or SimpleBayes.tokenize_text
-
-        if cache_path is not None:
-            self.cache_path = cache_path
-            self.cache_train()
-        else:
-            self.cache_path = '/tmp/'
+        self.cache_path = cache_path
 
     @classmethod
     def tokenize_text(cls, text):
@@ -147,9 +143,15 @@ class SimpleBayes(object):
         Loads the data for this classifier from a cache file
         """
         filename = self.get_cache_location()
+
+        if not os.path.exists(filename):
+            return False
+
         categories = pickle.load(open(filename, 'rb'))
 
         assert isinstance(categories, BayesCategories), \
             "Cache data is either corrupt or invalid"
 
         self.categories = categories
+
+        return True

@@ -2,7 +2,6 @@ simplebayes
 ===========
 A memory-based, optional-persistence naïve bayesian text classifier.
 --------------------------------------------------------------------
-
 ::
 
     This work is heavily inspired by the python "redisbayes" module found here:
@@ -12,23 +11,14 @@ A memory-based, optional-persistence naïve bayesian text classifier.
     using the bayesian classifier to classify large sets of text, or when
     attempting to train with very large sets of sample data.
 
-
 Installation
 ------------
-
-PIP::
+::
 
     sudo pip install simplebayes
 
-
-GIT::
-
-    sudo pip install git+git://github.com/hickeroar/simplebayes.git
-
-
 Basic Usage
 -----------
-
 ::
 
     import simplebayes
@@ -42,19 +32,30 @@ Basic Usage
 
     print bayes.score('i fear zombies and love the government')
 
-
 Cache Usage
 -----------
-
 ::
 
     import simplebayes
     bayes = simplebayes.SimpleBayes(cache_path='/my/cache/')
-
-    bayes.train('good', 'sunshine drugs love sex lobster sloth')
-    bayes.train('bad', 'fear death horror government zombie')
-
-    bayes.persist_cache()
-    # Next time we instantiate w/ the same cache_path,
-    # the cached training data will be loaded.
     # Cache file is '/my/cache/_simplebayes.pickle'
+    # Default cache_path is '/tmp/'
+
+    if not bayes.cache_train():
+        # Unable to load cache data, so we're training it
+        bayes.train('good', 'sunshine drugs love sex lobster sloth')
+        bayes.train('bad', 'fear death horror government zombie')
+
+        # Saving the cache so next time the training won't be needed
+        bayes.persist_cache()
+
+Tokenizer Override
+------------------
+::
+
+    import simplebayes
+
+    def my_tokenizer(sample):
+        return sample.split()
+
+    bayes = simplebayes.SimpleBayes(tokenizer=my_tokenizer)
