@@ -26,9 +26,13 @@ from simplebayes import SimpleBayes
 from simplebayes.categories import BayesCategories
 import unittest
 import mock
-import __builtin__
 import pickle
 import os
+try:
+    import __builtin__ as builtins
+except ImportError:
+    # pylint: disable=import-error
+    import builtins
 
 
 class SimpleBayesTests(unittest.TestCase):
@@ -168,7 +172,7 @@ class SimpleBayesTests(unittest.TestCase):
         cat2_mock.get_token_count.assert_any_call('world')
         cat2_mock.get_tally.assert_called_once_with()
 
-    @mock.patch.object(__builtin__, 'open')
+    @mock.patch.object(builtins, 'open')
     @mock.patch.object(pickle, 'load')
     @mock.patch.object(os.path, 'exists')
     def test_cache_train(self, exists_mock, load_mock, open_mock):
@@ -198,7 +202,7 @@ class SimpleBayesTests(unittest.TestCase):
         exists_mock.assert_called_once_with('/tmp/_simplebayes.pickle')
         self.assertFalse(result)
 
-    @mock.patch.object(__builtin__, 'open')
+    @mock.patch.object(builtins, 'open')
     @mock.patch.object(pickle, 'dump')
     def test_persist_cache(self, dump_mock, open_mock):
         open_mock.return_value = 'opened'

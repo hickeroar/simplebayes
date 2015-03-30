@@ -3,7 +3,7 @@ echo
 echo
 echo " [simplebayes] Step 1: Executing Unit Tests"
 echo
-nosetests tests/test.py --with-coverage --cover-package=simplebayes --cover-min-percentage 100 -s
+nosetests3 tests/test.py --with-coverage --cover-package=simplebayes --cover-min-percentage 100 -s
 rm -f .coverage*
 echo -e "\nExit Code:" $?
 

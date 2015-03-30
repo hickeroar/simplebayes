@@ -79,7 +79,7 @@ class SimpleBayes(object):
         except KeyError:
             bayes_category = self.categories.add_category(category)
 
-        tokens = self.tokenizer(text)
+        tokens = self.tokenizer(str(text))
         occurrence_counts = self.count_token_occurrences(tokens)
 
         for word, count in occurrence_counts.items():
