@@ -36,6 +36,22 @@ class BayesCategoryTests(unittest.TestCase):
         self.assertIn('foo', bc.tokens)
         self.assertEqual(bc.tokens['foo'], 5)
 
+    def test_untrain_token(self):
+        bc = BayesCategory('foo')
+        bc.train_token('foo', 5)
+        bc.train_token('bar', 7)
+        self.assertEqual(12, bc.tally)
+        self.assertIn('foo', bc.tokens)
+        self.assertIn('bar', bc.tokens)
+        self.assertEqual(bc.tokens['foo'], 5)
+        self.assertEqual(bc.tokens['bar'], 7)
+        bc.untrain_token('foo', 3)
+        bc.untrain_token('bar', 20)
+        bc.untrain_token('baz', 5)
+        self.assertEqual(2, bc.tally)
+        self.assertEqual(bc.tokens['foo'], 2)
+        self.assertEqual(bc.tokens['bar'], 0)
+
     def test_get_token_count(self):
         bc = BayesCategory('foo')
         bc.train_token('foo', 5)

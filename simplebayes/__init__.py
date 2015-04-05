@@ -66,6 +66,10 @@ class SimpleBayes(object):
                 counts[word] = 1
         return counts
 
+    def flush(self):
+        """Deletes all tokens & categories"""
+        self.categories = BayesCategories()
+
     def train(self, category, text):
         """
         Trains a category with a sample of text
@@ -84,6 +88,25 @@ class SimpleBayes(object):
 
         for word, count in occurrence_counts.items():
             bayes_category.train_token(word, count)
+
+    def untrain(self, category, text):
+        """
+        Untrains a category with a sample of text
+        :param category: the name of the category we want to train
+        :type category: str
+        :param text: the text we want to untrain the category with
+        :type text: str
+        """
+        try:
+            bayes_category = self.categories.get_category(category)
+        except KeyError:
+            return
+
+        tokens = self.tokenizer(str(text))
+        occurance_counts = self.count_token_occurrences(tokens)
+
+        for word, count in occurance_counts.items():
+            bayes_category.untrain_token(word, count)
 
     def classify(self, text):
         """
@@ -119,6 +142,15 @@ class SimpleBayes(object):
                 scores[category] += \
                     math.log(float(score) / category_tally)
         return scores
+
+    def tally(self, category):
+        """Gets the tally for a requested category"""
+        try:
+            bayes_category = self.categories.get_category(category)
+        except KeyError:
+            return 0
+
+        return bayes_category.get_tally()
 
     def get_cache_location(self):
         """

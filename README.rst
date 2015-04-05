@@ -19,7 +19,7 @@ Installation
 
 Basic Usage
 -----------
-::
+.. code-block:: python
 
     import simplebayes
     bayes = simplebayes.SimpleBayes()
@@ -32,9 +32,13 @@ Basic Usage
 
     print bayes.score('i fear zombies and love the government')
 
+    bayes.untrain('bad', 'fear death')
+
+    assert bayes.tally('bad') == 3
+
 Cache Usage
 -----------
-::
+.. code-block:: python
 
     import simplebayes
     bayes = simplebayes.SimpleBayes(cache_path='/my/cache/')
@@ -51,7 +55,7 @@ Cache Usage
 
 Tokenizer Override
 ------------------
-::
+.. code-block:: python
 
     import simplebayes
 

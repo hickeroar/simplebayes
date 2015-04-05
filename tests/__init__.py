@@ -53,6 +53,24 @@ class SimpleBayesTests(unittest.TestCase):
             }
         )
 
+    def test_flush_and_tally(self):
+        sb = SimpleBayes()
+        sb.train('foo', 'hello world hello')
+        self.assertEqual(sb.tally('foo'), 3)
+        sb.flush()
+        self.assertEqual(sb.tally('foo'), 0)
+
+    def test_untrain(self):
+        sb = SimpleBayes()
+        sb.train('foo', 'hello world hello')
+        self.assertEqual(sb.tally('foo'), 3)
+        self.assertEqual(sb.tally('bar'), 0)
+        sb.untrain('bar', 'for bar baz')
+        self.assertEqual(sb.tally('foo'), 3)
+        self.assertEqual(sb.tally('bar'), 0)
+        sb.untrain('foo', 'hello world')
+        self.assertEqual(sb.tally('foo'), 1)
+
     @mock.patch.object(BayesCategories, 'get_category')
     # pylint: disable=no-self-use
     def test_train_with_existing_category(self, get_category_mock):

@@ -34,6 +34,10 @@ assert bayes.classify('sloths are so cute i love them') == 'good'
 assert bayes.classify('i would fear a zombie and love the government') == 'bad'
 
 print bayes.score('i fear zombies and love the government')
+
+bayes.untrain('bad', 'fear death')
+
+assert bayes.tally('bad') == 3
 ```
 
 Cache Usage
