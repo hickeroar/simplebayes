@@ -24,7 +24,6 @@ SOFTWARE.
 """
 from simplebayes.categories import BayesCategories
 import pickle
-import math
 import os
 
 
@@ -37,6 +36,7 @@ class SimpleBayes(object):
         self.categories = BayesCategories()
         self.tokenizer = tokenizer or SimpleBayes.tokenize_text
         self.cache_path = cache_path
+        self.probabilities = {}
 
     @classmethod
     def tokenize_text(cls, text):
@@ -70,6 +70,31 @@ class SimpleBayes(object):
         """Deletes all tokens & categories"""
         self.categories = BayesCategories()
 
+    def calculate_category_prob(self):
+        """Caches the individual probabilities for each category"""
+        total_tally = 0.0
+        probs = {}
+        for category, bayes_category in \
+                self.categories.get_categories().items():
+            count = bayes_category.get_tally()
+            total_tally += count
+            probs[category] = count
+
+        for category, count in probs.items():
+            if total_tally > 0:
+                probs[category] = count/total_tally
+            else:
+                probs[category] = 0
+
+        for category, _ in \
+                self.categories.get_categories().items():
+            self.probabilities[category] = {
+                # Probability that any given token is of this category
+                'prc': probs[category],
+                # Probability that any given token is not of this category
+                'prnc': sum(probs.values()) - probs[category]
+            }
+
     def train(self, category, text):
         """
         Trains a category with a sample of text
@@ -89,6 +114,9 @@ class SimpleBayes(object):
         for word, count in occurrence_counts.items():
             bayes_category.train_token(word, count)
 
+        # Updating our per-category overall probabilities
+        self.calculate_category_prob()
+
     def untrain(self, category, text):
         """
         Untrains a category with a sample of text
@@ -107,6 +135,9 @@ class SimpleBayes(object):
 
         for word, count in occurance_counts.items():
             bayes_category.untrain_token(word, count)
+
+        # Updating our per-category overall probabilities
+        self.calculate_category_prob()
 
     def classify(self, text):
         """
@@ -131,17 +162,43 @@ class SimpleBayes(object):
         """
         occurs = self.count_token_occurrences(self.tokenizer(text))
         scores = {}
-        for category, bayes_category in \
-                self.categories.get_categories().items():
-            category_tally = bayes_category.get_tally()
-            if category_tally == 0:
-                continue
-            scores[category] = 0.0
-            for word, _ in occurs.items():
-                score = bayes_category.get_token_count(word) or 0.1
-                scores[category] += \
-                    math.log(float(score) / category_tally)
-        return scores
+        for category in self.categories.get_categories().keys():
+            scores[category] = 0
+
+        for word, count in occurs.items():
+            token_scores = {}
+
+            # Calculating individual token probabilities
+            for category, bayes_category in \
+                    self.categories.get_categories().items():
+                token_scores[category] = bayes_category.get_token_count(word)
+
+            # Calculating bayes probabiltity for this token
+            # http://en.wikipedia.org/wiki/Naive_Bayes_spam_filtering
+            for category, token_score in token_scores.items():
+                # P that this token is NOT of this category
+                prtnc = sum(token_scores.values()) - token_score
+
+                # Assembling the parts of the bayes equation
+                numerator = (token_score * self.probabilities[category]['prc'])
+                denominator = (
+                    (token_score * self.probabilities[category]['prc']) +
+                    (prtnc * self.probabilities[category]['prnc'])
+                )
+
+                if denominator == 0.0:
+                    continue
+
+                # Bayes probability calculation
+                scores[category] += count * (numerator / denominator)
+
+        # Removing empty categories from the results
+        final_scores = {}
+        for category, score in scores.items():
+            if score > 0:
+                final_scores[category] = score
+
+        return final_scores
 
     def tally(self, category):
         """Gets the tally for a requested category"""

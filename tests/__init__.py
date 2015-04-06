@@ -120,10 +120,11 @@ class SimpleBayesTests(unittest.TestCase):
         }
 
         sb = SimpleBayes()
+        sb.calculate_category_prob()
         result = sb.classify('hello world')
 
-        self.assertEqual('foo', result)
-        get_categories_mock.assert_called_once_with()
+        self.assertEqual('bar', result)
+        assert 5 == get_categories_mock.call_count
         cat1_mock.get_token_count.assert_any_call('hello')
         cat1_mock.get_token_count.assert_any_call('world')
         cat1_mock.get_tally.assert_called_once_with()
@@ -139,22 +140,24 @@ class SimpleBayesTests(unittest.TestCase):
         result = sb.classify('hello world')
 
         self.assertIsNone(result)
-        get_categories_mock.assert_called_once_with()
+        assert 3 == get_categories_mock.call_count
 
     @mock.patch.object(BayesCategories, 'get_categories')
     def test_classify_with_empty_category(self, get_categories_mock):
         cat_mock = mock.MagicMock()
         cat_mock.get_tally.return_value = 0
+        cat_mock.get_token_count.return_value = 0
 
         get_categories_mock.return_value = {
             'foo': cat_mock
         }
 
         sb = SimpleBayes()
+        sb.calculate_category_prob()
         result = sb.classify('hello world')
 
         self.assertIsNone(result)
-        get_categories_mock.assert_called_once_with()
+        assert 5 == get_categories_mock.call_count
         cat_mock.get_tally.assert_called_once_with()
 
     @mock.patch.object(BayesCategories, 'get_categories')
@@ -172,17 +175,18 @@ class SimpleBayesTests(unittest.TestCase):
         }
 
         sb = SimpleBayes()
+        sb.calculate_category_prob()
         result = sb.score('hello world')
 
         self.assertEqual(
             {
-                'foo': -2.772588722239781,
-                'bar': -4.1588830833596715
+                'foo': 0.22222222222222224,
+                'bar': 1.777777777777778
             },
             result
         )
 
-        get_categories_mock.assert_called_once_with()
+        assert 5 == get_categories_mock.call_count
         cat1_mock.get_token_count.assert_any_call('hello')
         cat1_mock.get_token_count.assert_any_call('world')
         cat1_mock.get_tally.assert_called_once_with()
