@@ -80,19 +80,19 @@ class SimpleBayes(object):
             total_tally += count
             probs[category] = count
 
+        # Calculating the probability
         for category, count in probs.items():
             if total_tally > 0:
-                probs[category] = count/total_tally
+                probs[category] = float(count)/float(total_tally)
             else:
-                probs[category] = 0
+                probs[category] = 0.0
 
-        for category, _ in \
-                self.categories.get_categories().items():
+        for category, probability in probs.items():
             self.probabilities[category] = {
                 # Probability that any given token is of this category
-                'prc': probs[category],
+                'prc': probability,
                 # Probability that any given token is not of this category
-                'prnc': sum(probs.values()) - probs[category]
+                'prnc': sum(probs.values()) - probability
             }
 
     def train(self, category, text):
@@ -165,32 +165,33 @@ class SimpleBayes(object):
         for category in self.categories.get_categories().keys():
             scores[category] = 0
 
+        categories = self.categories.get_categories().items()
+
         for word, count in occurs.items():
             token_scores = {}
 
-            # Calculating individual token probabilities
-            for category, bayes_category in \
-                    self.categories.get_categories().items():
-                token_scores[category] = bayes_category.get_token_count(word)
+            # Adding up individual token scores
+            for category, bayes_category in categories:
+                token_scores[category] = \
+                    float(bayes_category.get_token_count(word))
+
+            # We use this to get token-in-category probabilities
+            token_tally = sum(token_scores.values())
+
+            # If this token isn't found anywhere its probability is 0
+            if token_tally == 0.0:
+                continue
 
             # Calculating bayes probabiltity for this token
             # http://en.wikipedia.org/wiki/Naive_Bayes_spam_filtering
             for category, token_score in token_scores.items():
-                # P that this token is NOT of this category
-                prtnc = sum(token_scores.values()) - token_score
-
-                # Assembling the parts of the bayes equation
-                numerator = (token_score * self.probabilities[category]['prc'])
-                denominator = (
-                    (token_score * self.probabilities[category]['prc']) +
-                    (prtnc * self.probabilities[category]['prnc'])
-                )
-
-                if denominator == 0.0:
-                    continue
-
-                # Bayes probability calculation
-                scores[category] += count * (numerator / denominator)
+                # Bayes probability * the number of occurances of this token
+                scores[category] += count * \
+                    self.calculate_bayesian_probability(
+                        category,
+                        token_score,
+                        token_tally
+                    )
 
         # Removing empty categories from the results
         final_scores = {}
@@ -199,6 +200,24 @@ class SimpleBayes(object):
                 final_scores[category] = score
 
         return final_scores
+
+    def calculate_bayesian_probability(self, cat, token_score, token_tally):
+        """Calculates the bayesian probability for a given token/category"""
+        # P that any given token IS in this category
+        prc = self.probabilities[cat]['prc']
+        # P that any given token is NOT in this category
+        prnc = self.probabilities[cat]['prnc']
+        # P that this token is NOT of this category
+        prtnc = (token_tally - token_score) / token_tally
+        # P that this token IS of this category
+        prtc = token_score / token_tally
+
+        # Assembling the parts of the bayes equation
+        numerator = (prtc * prc)
+        denominator = (numerator + (prtnc * prnc))
+
+        # Returning the calculated bayes probability unless the denom. is 0
+        return numerator / denominator if denominator != 0.0 else 0.0
 
     def tally(self, category):
         """Gets the tally for a requested category"""

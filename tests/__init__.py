@@ -124,7 +124,8 @@ class SimpleBayesTests(unittest.TestCase):
         result = sb.classify('hello world')
 
         self.assertEqual('bar', result)
-        assert 5 == get_categories_mock.call_count
+        assert 3 == get_categories_mock.call_count, \
+            get_categories_mock.call_count
         cat1_mock.get_token_count.assert_any_call('hello')
         cat1_mock.get_token_count.assert_any_call('world')
         cat1_mock.get_tally.assert_called_once_with()
@@ -140,7 +141,8 @@ class SimpleBayesTests(unittest.TestCase):
         result = sb.classify('hello world')
 
         self.assertIsNone(result)
-        assert 3 == get_categories_mock.call_count
+        assert 2 == get_categories_mock.call_count, \
+            get_categories_mock.call_count
 
     @mock.patch.object(BayesCategories, 'get_categories')
     def test_classify_with_empty_category(self, get_categories_mock):
@@ -157,7 +159,8 @@ class SimpleBayesTests(unittest.TestCase):
         result = sb.classify('hello world')
 
         self.assertIsNone(result)
-        assert 5 == get_categories_mock.call_count
+        assert 3 == get_categories_mock.call_count, \
+            get_categories_mock.call_count
         cat_mock.get_tally.assert_called_once_with()
 
     @mock.patch.object(BayesCategories, 'get_categories')
@@ -186,7 +189,44 @@ class SimpleBayesTests(unittest.TestCase):
             result
         )
 
-        assert 5 == get_categories_mock.call_count
+        assert 3 == get_categories_mock.call_count, \
+            get_categories_mock.call_count
+        cat1_mock.get_token_count.assert_any_call('hello')
+        cat1_mock.get_token_count.assert_any_call('world')
+        cat1_mock.get_tally.assert_called_once_with()
+        cat2_mock.get_token_count.assert_any_call('hello')
+        cat2_mock.get_token_count.assert_any_call('world')
+        cat2_mock.get_tally.assert_called_once_with()
+
+    @mock.patch.object(BayesCategories, 'get_categories')
+    def test_score_with_zero_bayes_denon(self, get_categories_mock):
+        cat1_mock = mock.MagicMock()
+        cat1_mock.get_token_count.return_value = 2
+        cat1_mock.get_tally.return_value = 8
+        cat2_mock = mock.MagicMock()
+        cat2_mock.get_token_count.return_value = 4
+        cat2_mock.get_tally.return_value = 32
+
+        get_categories_mock.return_value = {
+            'foo': cat1_mock,
+            'bar': cat2_mock
+        }
+
+        sb = SimpleBayes()
+        sb.calculate_category_prob()
+        sb.probabilities['foo']['prc'] = 0
+        sb.probabilities['foo']['prnc'] = 0
+        result = sb.score('hello world')
+
+        self.assertEqual(
+            {
+                'bar': 1.777777777777778
+            },
+            result
+        )
+
+        assert 3 == get_categories_mock.call_count, \
+            get_categories_mock.call_count
         cat1_mock.get_token_count.assert_any_call('hello')
         cat1_mock.get_token_count.assert_any_call('world')
         cat1_mock.get_tally.assert_called_once_with()
