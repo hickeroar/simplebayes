@@ -1,10 +1,9 @@
 # coding: utf-8
-import setuptools
-from distutils.core import setup
+from setuptools import setup
 
 setup (
     name = 'simplebayes',
-    version = '1.5.1',
+    version = '1.5.2',
     url = 'http://hickeroar.github.io/simplebayes/',
     author = 'Ryan Vennell',
     author_email = 'ryan.vennell@gmail.com',
@@ -24,4 +23,3 @@ setup (
     ],
     packages = ['simplebayes'],
 )
-# python ./setup.py sdist upload
