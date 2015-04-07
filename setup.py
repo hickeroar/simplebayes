@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup (
     name = 'simplebayes',
-    version = '1.5.2',
+    version = '1.5.3',
     url = 'http://hickeroar.github.io/simplebayes/',
     author = 'Ryan Vennell',
     author_email = 'ryan.vennell@gmail.com',
