@@ -120,7 +120,7 @@ class SimpleBayesTests(unittest.TestCase):
         }
 
         sb = SimpleBayes()
-        sb.calculate_category_prob()
+        sb.calculate_category_probability()
         result = sb.classify('hello world')
 
         self.assertEqual('bar', result)
@@ -155,7 +155,7 @@ class SimpleBayesTests(unittest.TestCase):
         }
 
         sb = SimpleBayes()
-        sb.calculate_category_prob()
+        sb.calculate_category_probability()
         result = sb.classify('hello world')
 
         self.assertIsNone(result)
@@ -178,7 +178,7 @@ class SimpleBayesTests(unittest.TestCase):
         }
 
         sb = SimpleBayes()
-        sb.calculate_category_prob()
+        sb.calculate_category_probability()
         result = sb.score('hello world')
 
         self.assertEqual(
@@ -213,7 +213,7 @@ class SimpleBayesTests(unittest.TestCase):
         }
 
         sb = SimpleBayes()
-        sb.calculate_category_prob()
+        sb.calculate_category_probability()
         sb.probabilities['foo']['prc'] = 0
         sb.probabilities['foo']['prnc'] = 0
         result = sb.score('hello world')

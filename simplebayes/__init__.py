@@ -70,7 +70,7 @@ class SimpleBayes(object):
         """Deletes all tokens & categories"""
         self.categories = BayesCategories()
 
-    def calculate_category_prob(self):
+    def calculate_category_probability(self):
         """Caches the individual probabilities for each category"""
         total_tally = 0.0
         probs = {}
@@ -115,7 +115,7 @@ class SimpleBayes(object):
             bayes_category.train_token(word, count)
 
         # Updating our per-category overall probabilities
-        self.calculate_category_prob()
+        self.calculate_category_probability()
 
     def untrain(self, category, text):
         """
@@ -137,7 +137,7 @@ class SimpleBayes(object):
             bayes_category.untrain_token(word, count)
 
         # Updating our per-category overall probabilities
-        self.calculate_category_prob()
+        self.calculate_category_probability()
 
     def classify(self, text):
         """
