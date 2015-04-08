@@ -3,8 +3,8 @@ from setuptools import setup
 
 setup (
     name = 'simplebayes',
-    version = '1.5.3',
-    url = 'http://hickeroar.github.io/simplebayes/',
+    version = '1.5.4',
+    url = 'https://github.com/hickeroar/simplebayes',
     author = 'Ryan Vennell',
     author_email = 'ryan.vennell@gmail.com',
     description = 'A memory-based, optional-persistence naïve bayesian text classifier.',
