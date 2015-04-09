@@ -33,6 +33,12 @@ class SimpleBayes(object):
     cache_file = '_simplebayes.pickle'
 
     def __init__(self, tokenizer=None, cache_path='/tmp/'):
+        """
+        :param tokenizer: A tokenizer override
+        :type tokenizer: function (optional)
+        :param cache_path: path to data storage
+        :type cache_path: str
+        """
         self.categories = BayesCategories()
         self.tokenizer = tokenizer or SimpleBayes.tokenize_text
         self.cache_path = cache_path
@@ -42,6 +48,7 @@ class SimpleBayes(object):
     def tokenize_text(cls, text):
         """
         Default tokenize method; can be overridden
+
         :param text: the text we want to tokenize
         :type text: str
         :return: list of tokenized text
@@ -53,6 +60,7 @@ class SimpleBayes(object):
     def count_token_occurrences(cls, words):
         """
         Creates a key/value set of word/count for a given sample of text
+
         :param words: full list of all tokens, non-unique
         :type words: list
         :return: key/value pairs of words and their counts in the list
@@ -67,11 +75,15 @@ class SimpleBayes(object):
         return counts
 
     def flush(self):
-        """Deletes all tokens & categories"""
+        """
+        Deletes all tokens & categories
+        """
         self.categories = BayesCategories()
 
     def calculate_category_probability(self):
-        """Caches the individual probabilities for each category"""
+        """
+        Caches the individual probabilities for each category
+        """
         total_tally = 0.0
         probs = {}
         for category, bayes_category in \
@@ -98,6 +110,7 @@ class SimpleBayes(object):
     def train(self, category, text):
         """
         Trains a category with a sample of text
+
         :param category: the name of the category we want to train
         :type category: str
         :param text: the text we want to train the category with
@@ -120,6 +133,7 @@ class SimpleBayes(object):
     def untrain(self, category, text):
         """
         Untrains a category with a sample of text
+
         :param category: the name of the category we want to train
         :type category: str
         :param text: the text we want to untrain the category with
@@ -142,6 +156,7 @@ class SimpleBayes(object):
     def classify(self, text):
         """
         Chooses the highest scoring category for a sample of text
+
         :param text: sample text to classify
         :type text: str
         :return: the "winning" category
@@ -155,6 +170,7 @@ class SimpleBayes(object):
     def score(self, text):
         """
         Scores a sample of text
+
         :param text: sample text to score
         :type text: str
         :return: dict of scores per category
@@ -202,7 +218,18 @@ class SimpleBayes(object):
         return final_scores
 
     def calculate_bayesian_probability(self, cat, token_score, token_tally):
-        """Calculates the bayesian probability for a given token/category"""
+        """
+        Calculates the bayesian probability for a given token/category
+
+        :param cat: The category we're scoring for this token
+        :type cat: str
+        :param token_score: The tally of this token for this category
+        :type token_score: float
+        :param token_tally: The tally total for this token from all categories
+        :type token_tally: float
+        :return: bayesian probability
+        :rtype: float
+        """
         # P that any given token IS in this category
         prc = self.probabilities[cat]['prc']
         # P that any given token is NOT in this category
@@ -220,7 +247,14 @@ class SimpleBayes(object):
         return numerator / denominator if denominator != 0.0 else 0.0
 
     def tally(self, category):
-        """Gets the tally for a requested category"""
+        """
+        Gets the tally for a requested category
+
+        :param category: The category we want a tally for
+        :type cat: category
+        :return: tally for a given category
+        :rtype: int
+        """
         try:
             bayes_category = self.categories.get_category(category)
         except KeyError:
@@ -231,6 +265,9 @@ class SimpleBayes(object):
     def get_cache_location(self):
         """
         Gets the location of the cache file
+
+        :return: the location of the cache file
+        :rtype: string
         """
         filename = self.cache_path if \
             self.cache_path[-1:] == '/' else \
@@ -249,6 +286,9 @@ class SimpleBayes(object):
     def cache_train(self):
         """
         Loads the data for this classifier from a cache file
+
+        :return: whether or not we were successful
+        :rtype: bool
         """
         filename = self.get_cache_location()
 

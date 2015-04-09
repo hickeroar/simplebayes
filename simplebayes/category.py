@@ -29,6 +29,10 @@ class BayesCategory(object):
     """
 
     def __init__(self, name):
+        """
+        :param name: The name of the category we're creating
+        :type name: str
+        """
         self.name = name
         self.tokens = {}
         self.tally = 0
@@ -36,6 +40,7 @@ class BayesCategory(object):
     def train_token(self, word, count):
         """
         Trains a particular token (increases the weight/count of it)
+
         :param word: the token we're going to train
         :type word: str
         :param count: the number of occurances in the sample
@@ -50,6 +55,7 @@ class BayesCategory(object):
     def untrain_token(self, word, count):
         """
         Untrains a particular token (decreases the weight/count of it)
+
         :param word: the token we're going to train
         :type word: str
         :param count: the number of occurances in the sample
@@ -67,6 +73,7 @@ class BayesCategory(object):
     def get_token_count(self, word):
         """
         Gets the count assosicated with a provided token/word
+
         :param word: the token we're getting the weight of
         :type word: str
         :return: the weight/count of the token
@@ -77,6 +84,7 @@ class BayesCategory(object):
     def get_tally(self):
         """
         Gets the tally of all types
+
         :return: The total number of tokens
         :rtype: int
         """

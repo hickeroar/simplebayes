@@ -1,0 +1,470 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>simplebayes &mdash; simplebayes  documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="simplebayes  documentation" href="../index.html"/>
+        <link rel="up" title="Module code" href="index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../index.html" class="fa fa-home"> simplebayes</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../simplebayes.html">simplebayes package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../simplebayes.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../simplebayes.html#module-simplebayes">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">simplebayes</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      
+    <li>simplebayes</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <h1>Source code for simplebayes</h1><div class="highlight"><pre>
+<span class="c"># coding: utf-8</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">The MIT License (MIT)</span>
+
+<span class="sd">Copyright (c) 2015 Ryan Vennell</span>
+
+<span class="sd">Permission is hereby granted, free of charge, to any person obtaining a copy</span>
+<span class="sd">of this software and associated documentation files (the &quot;Software&quot;), to deal</span>
+<span class="sd">in the Software without restriction, including without limitation the rights</span>
+<span class="sd">to use, copy, modify, merge, publish, distribute, sublicense, and/or sell</span>
+<span class="sd">copies of the Software, and to permit persons to whom the Software is</span>
+<span class="sd">furnished to do so, subject to the following conditions:</span>
+
+<span class="sd">The above copyright notice and this permission notice shall be included in all</span>
+<span class="sd">copies or substantial portions of the Software.</span>
+
+<span class="sd">THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR</span>
+<span class="sd">IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,</span>
+<span class="sd">FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE</span>
+<span class="sd">AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER</span>
+<span class="sd">LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,</span>
+<span class="sd">OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE</span>
+<span class="sd">SOFTWARE.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">simplebayes.categories</span> <span class="kn">import</span> <span class="n">BayesCategories</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+
+<div class="viewcode-block" id="SimpleBayes"><a class="viewcode-back" href="../simplebayes.html#simplebayes.SimpleBayes">[docs]</a><span class="k">class</span> <span class="nc">SimpleBayes</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A memory-based, optional-persistence naïve bayesian text classifier.&quot;&quot;&quot;</span>
+
+    <span class="n">cache_file</span> <span class="o">=</span> <span class="s">&#39;_simplebayes.pickle&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">cache_path</span><span class="o">=</span><span class="s">&#39;/tmp/&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param tokenizer: A tokenizer override</span>
+<span class="sd">        :type tokenizer: function (optional)</span>
+<span class="sd">        :param cache_path: path to data storage</span>
+<span class="sd">        :type cache_path: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">categories</span> <span class="o">=</span> <span class="n">BayesCategories</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span> <span class="o">=</span> <span class="n">tokenizer</span> <span class="ow">or</span> <span class="n">SimpleBayes</span><span class="o">.</span><span class="n">tokenize_text</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cache_path</span> <span class="o">=</span> <span class="n">cache_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">probabilities</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="SimpleBayes.tokenize_text"><a class="viewcode-back" href="../simplebayes.html#simplebayes.SimpleBayes.tokenize_text">[docs]</a>    <span class="k">def</span> <span class="nf">tokenize_text</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Default tokenize method; can be overridden</span>
+
+<span class="sd">        :param text: the text we want to tokenize</span>
+<span class="sd">        :type text: str</span>
+<span class="sd">        :return: list of tokenized text</span>
+<span class="sd">        :rtype: list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">w</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">]</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="SimpleBayes.count_token_occurrences"><a class="viewcode-back" href="../simplebayes.html#simplebayes.SimpleBayes.count_token_occurrences">[docs]</a>    <span class="k">def</span> <span class="nf">count_token_occurrences</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a key/value set of word/count for a given sample of text</span>
+
+<span class="sd">        :param words: full list of all tokens, non-unique</span>
+<span class="sd">        :type words: list</span>
+<span class="sd">        :return: key/value pairs of words and their counts in the list</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">counts</span><span class="p">:</span>
+                <span class="n">counts</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">counts</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">counts</span>
+</div>
+<div class="viewcode-block" id="SimpleBayes.flush"><a class="viewcode-back" href="../simplebayes.html#simplebayes.SimpleBayes.flush">[docs]</a>    <span class="k">def</span> <span class="nf">flush</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Deletes all tokens &amp; categories</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">categories</span> <span class="o">=</span> <span class="n">BayesCategories</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="SimpleBayes.calculate_category_probability"><a class="viewcode-back" href="../simplebayes.html#simplebayes.SimpleBayes.calculate_category_probability">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_category_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Caches the individual probabilities for each category</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">total_tally</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">probs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">category</span><span class="p">,</span> <span class="n">bayes_category</span> <span class="ow">in</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">categories</span><span class="o">.</span><span class="n">get_categories</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="n">bayes_category</span><span class="o">.</span><span class="n">get_tally</span><span class="p">()</span>
+            <span class="n">total_tally</span> <span class="o">+=</span> <span class="n">count</span>
+            <span class="n">probs</span><span class="p">[</span><span class="n">category</span><span class="p">]</span> <span class="o">=</span> <span class="n">count</span>
+
+        <span class="c"># Calculating the probability</span>
+        <span class="k">for</span> <span class="n">category</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">probs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">total_tally</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">probs</span><span class="p">[</span><span class="n">category</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">count</span><span class="p">)</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">total_tally</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">probs</span><span class="p">[</span><span class="n">category</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="k">for</span> <span class="n">category</span><span class="p">,</span> <span class="n">probability</span> <span class="ow">in</span> <span class="n">probs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">probabilities</span><span class="p">[</span><span class="n">category</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="c"># Probability that any given token is of this category</span>
+                <span class="s">&#39;prc&#39;</span><span class="p">:</span> <span class="n">probability</span><span class="p">,</span>
+                <span class="c"># Probability that any given token is not of this category</span>
+                <span class="s">&#39;prnc&#39;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">probs</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="o">-</span> <span class="n">probability</span>
+            <span class="p">}</span>
+</div>
+<div class="viewcode-block" id="SimpleBayes.train"><a class="viewcode-back" href="../simplebayes.html#simplebayes.SimpleBayes.train">[docs]</a>    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">category</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Trains a category with a sample of text</span>
+
+<span class="sd">        :param category: the name of the category we want to train</span>
+<span class="sd">        :type category: str</span>
+<span class="sd">        :param text: the text we want to train the category with</span>
+<span class="sd">        :type text: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">bayes_category</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">categories</span><span class="o">.</span><span class="n">get_category</span><span class="p">(</span><span class="n">category</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="n">bayes_category</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">categories</span><span class="o">.</span><span class="n">add_category</span><span class="p">(</span><span class="n">category</span><span class="p">)</span>
+
+        <span class="n">tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
+        <span class="n">occurrence_counts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">count_token_occurrences</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">occurrence_counts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">bayes_category</span><span class="o">.</span><span class="n">train_token</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
+
+        <span class="c"># Updating our per-category overall probabilities</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calculate_category_probability</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="SimpleBayes.untrain"><a class="viewcode-back" href="../simplebayes.html#simplebayes.SimpleBayes.untrain">[docs]</a>    <span class="k">def</span> <span class="nf">untrain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">category</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Untrains a category with a sample of text</span>
+
+<span class="sd">        :param category: the name of the category we want to train</span>
+<span class="sd">        :type category: str</span>
+<span class="sd">        :param text: the text we want to untrain the category with</span>
+<span class="sd">        :type text: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">bayes_category</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">categories</span><span class="o">.</span><span class="n">get_category</span><span class="p">(</span><span class="n">category</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
+        <span class="n">occurance_counts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">count_token_occurrences</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">occurance_counts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">bayes_category</span><span class="o">.</span><span class="n">untrain_token</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
+
+        <span class="c"># Updating our per-category overall probabilities</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calculate_category_probability</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="SimpleBayes.classify"><a class="viewcode-back" href="../simplebayes.html#simplebayes.SimpleBayes.classify">[docs]</a>    <span class="k">def</span> <span class="nf">classify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Chooses the highest scoring category for a sample of text</span>
+
+<span class="sd">        :param text: sample text to classify</span>
+<span class="sd">        :type text: str</span>
+<span class="sd">        :return: the &quot;winning&quot; category</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">score</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">score</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">])[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="SimpleBayes.score"><a class="viewcode-back" href="../simplebayes.html#simplebayes.SimpleBayes.score">[docs]</a>    <span class="k">def</span> <span class="nf">score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Scores a sample of text</span>
+
+<span class="sd">        :param text: sample text to score</span>
+<span class="sd">        :type text: str</span>
+<span class="sd">        :return: dict of scores per category</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">occurs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">count_token_occurrences</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">category</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">categories</span><span class="o">.</span><span class="n">get_categories</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">scores</span><span class="p">[</span><span class="n">category</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">categories</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">categories</span><span class="o">.</span><span class="n">get_categories</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">occurs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">token_scores</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="c"># Adding up individual token scores</span>
+            <span class="k">for</span> <span class="n">category</span><span class="p">,</span> <span class="n">bayes_category</span> <span class="ow">in</span> <span class="n">categories</span><span class="p">:</span>
+                <span class="n">token_scores</span><span class="p">[</span><span class="n">category</span><span class="p">]</span> <span class="o">=</span> \
+                    <span class="nb">float</span><span class="p">(</span><span class="n">bayes_category</span><span class="o">.</span><span class="n">get_token_count</span><span class="p">(</span><span class="n">word</span><span class="p">))</span>
+
+            <span class="c"># We use this to get token-in-category probabilities</span>
+            <span class="n">token_tally</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">token_scores</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+            <span class="c"># If this token isn&#39;t found anywhere its probability is 0</span>
+            <span class="k">if</span> <span class="n">token_tally</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="c"># Calculating bayes probabiltity for this token</span>
+            <span class="c"># http://en.wikipedia.org/wiki/Naive_Bayes_spam_filtering</span>
+            <span class="k">for</span> <span class="n">category</span><span class="p">,</span> <span class="n">token_score</span> <span class="ow">in</span> <span class="n">token_scores</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="c"># Bayes probability * the number of occurances of this token</span>
+                <span class="n">scores</span><span class="p">[</span><span class="n">category</span><span class="p">]</span> <span class="o">+=</span> <span class="n">count</span> <span class="o">*</span> \
+                    <span class="bp">self</span><span class="o">.</span><span class="n">calculate_bayesian_probability</span><span class="p">(</span>
+                        <span class="n">category</span><span class="p">,</span>
+                        <span class="n">token_score</span><span class="p">,</span>
+                        <span class="n">token_tally</span>
+                    <span class="p">)</span>
+
+        <span class="c"># Removing empty categories from the results</span>
+        <span class="n">final_scores</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">category</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">scores</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">score</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">final_scores</span><span class="p">[</span><span class="n">category</span><span class="p">]</span> <span class="o">=</span> <span class="n">score</span>
+
+        <span class="k">return</span> <span class="n">final_scores</span>
+</div>
+<div class="viewcode-block" id="SimpleBayes.calculate_bayesian_probability"><a class="viewcode-back" href="../simplebayes.html#simplebayes.SimpleBayes.calculate_bayesian_probability">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_bayesian_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cat</span><span class="p">,</span> <span class="n">token_score</span><span class="p">,</span> <span class="n">token_tally</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculates the bayesian probability for a given token/category</span>
+
+<span class="sd">        :param cat: The category we&#39;re scoring for this token</span>
+<span class="sd">        :type cat: str</span>
+<span class="sd">        :param token_score: The tally of this token for this category</span>
+<span class="sd">        :type token_score: float</span>
+<span class="sd">        :param token_tally: The tally total for this token from all categories</span>
+<span class="sd">        :type token_tally: float</span>
+<span class="sd">        :return: bayesian probability</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># P that any given token IS in this category</span>
+        <span class="n">prc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">probabilities</span><span class="p">[</span><span class="n">cat</span><span class="p">][</span><span class="s">&#39;prc&#39;</span><span class="p">]</span>
+        <span class="c"># P that any given token is NOT in this category</span>
+        <span class="n">prnc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">probabilities</span><span class="p">[</span><span class="n">cat</span><span class="p">][</span><span class="s">&#39;prnc&#39;</span><span class="p">]</span>
+        <span class="c"># P that this token is NOT of this category</span>
+        <span class="n">prtnc</span> <span class="o">=</span> <span class="p">(</span><span class="n">token_tally</span> <span class="o">-</span> <span class="n">token_score</span><span class="p">)</span> <span class="o">/</span> <span class="n">token_tally</span>
+        <span class="c"># P that this token IS of this category</span>
+        <span class="n">prtc</span> <span class="o">=</span> <span class="n">token_score</span> <span class="o">/</span> <span class="n">token_tally</span>
+
+        <span class="c"># Assembling the parts of the bayes equation</span>
+        <span class="n">numerator</span> <span class="o">=</span> <span class="p">(</span><span class="n">prtc</span> <span class="o">*</span> <span class="n">prc</span><span class="p">)</span>
+        <span class="n">denominator</span> <span class="o">=</span> <span class="p">(</span><span class="n">numerator</span> <span class="o">+</span> <span class="p">(</span><span class="n">prtnc</span> <span class="o">*</span> <span class="n">prnc</span><span class="p">))</span>
+
+        <span class="c"># Returning the calculated bayes probability unless the denom. is 0</span>
+        <span class="k">return</span> <span class="n">numerator</span> <span class="o">/</span> <span class="n">denominator</span> <span class="k">if</span> <span class="n">denominator</span> <span class="o">!=</span> <span class="mf">0.0</span> <span class="k">else</span> <span class="mf">0.0</span>
+</div>
+<div class="viewcode-block" id="SimpleBayes.tally"><a class="viewcode-back" href="../simplebayes.html#simplebayes.SimpleBayes.tally">[docs]</a>    <span class="k">def</span> <span class="nf">tally</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">category</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets the tally for a requested category</span>
+
+<span class="sd">        :param category: The category we want a tally for</span>
+<span class="sd">        :type cat: category</span>
+<span class="sd">        :return: tally for a given category</span>
+<span class="sd">        :rtype: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">bayes_category</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">categories</span><span class="o">.</span><span class="n">get_category</span><span class="p">(</span><span class="n">category</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+        <span class="k">return</span> <span class="n">bayes_category</span><span class="o">.</span><span class="n">get_tally</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="SimpleBayes.get_cache_location"><a class="viewcode-back" href="../simplebayes.html#simplebayes.SimpleBayes.get_cache_location">[docs]</a>    <span class="k">def</span> <span class="nf">get_cache_location</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets the location of the cache file</span>
+
+<span class="sd">        :return: the location of the cache file</span>
+<span class="sd">        :rtype: string</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_path</span> <span class="k">if</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">cache_path</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:]</span> <span class="o">==</span> <span class="s">&#39;/&#39;</span> <span class="k">else</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">cache_path</span> <span class="o">+</span> <span class="s">&#39;/&#39;</span>
+        <span class="n">filename</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_file</span>
+        <span class="k">return</span> <span class="n">filename</span>
+</div>
+<div class="viewcode-block" id="SimpleBayes.cache_persist"><a class="viewcode-back" href="../simplebayes.html#simplebayes.SimpleBayes.cache_persist">[docs]</a>    <span class="k">def</span> <span class="nf">cache_persist</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Saves the current trained data to the cache.</span>
+<span class="sd">        This is initiated by the program using this module</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cache_location</span><span class="p">()</span>
+        <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">categories</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&#39;wb&#39;</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="SimpleBayes.cache_train"><a class="viewcode-back" href="../simplebayes.html#simplebayes.SimpleBayes.cache_train">[docs]</a>    <span class="k">def</span> <span class="nf">cache_train</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads the data for this classifier from a cache file</span>
+
+<span class="sd">        :return: whether or not we were successful</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cache_location</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="n">categories</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">))</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">categories</span><span class="p">,</span> <span class="n">BayesCategories</span><span class="p">),</span> \
+            <span class="s">&quot;Cache data is either corrupt or invalid&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">categories</span> <span class="o">=</span> <span class="n">categories</span>
+
+        <span class="k">return</span> <span class="bp">True</span></div></div>
+</pre></div>
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Ryan Vennell.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

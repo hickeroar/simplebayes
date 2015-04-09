@@ -33,6 +33,7 @@ class BayesCategories(object):
     def add_category(self, name):
         """
         Adds a bayes category that we can later train
+
         :param name: name of the category
         :type name: str
         :return: the requested category
@@ -45,6 +46,7 @@ class BayesCategories(object):
     def get_category(self, name):
         """
         Returns the expected category. Will KeyError if non existant
+
         :param name: name of the category
         :type name: str
         :return: the requested category
