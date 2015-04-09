@@ -251,7 +251,7 @@ class SimpleBayes(object):
         Gets the tally for a requested category
 
         :param category: The category we want a tally for
-        :type cat: str
+        :type category: str
         :return: tally for a given category
         :rtype: int
         """
