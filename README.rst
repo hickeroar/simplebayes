@@ -11,6 +11,13 @@ A memory-based, optional-persistence naïve bayesian text classifier.
     using the bayesian classifier to classify large sets of text, or when
     attempting to train with very large sets of sample data.
 
+Build Status
+------------
+.. image:: https://travis-ci.org/hickeroar/simplebayes.svg?branch=master
+.. image:: https://img.shields.io/badge/coverage-100%-brightgreen.svg?style=flat
+.. image:: https://img.shields.io/badge/pylint-10.00/10-brightgreen.svg?style=flat
+.. image:: https://img.shields.io/badge/flake8-passing-brightgreen.svg?style=flat
+
 Installation
 ------------
 ::
