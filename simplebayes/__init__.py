@@ -302,4 +302,7 @@ class SimpleBayes(object):
 
         self.categories = categories
 
+        # Updating our per-category overall probabilities
+        self.calculate_category_probability()
+
         return True

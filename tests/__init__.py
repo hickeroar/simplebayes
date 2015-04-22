@@ -234,10 +234,11 @@ class SimpleBayesTests(unittest.TestCase):
         cat2_mock.get_token_count.assert_any_call('world')
         cat2_mock.get_tally.assert_called_once_with()
 
+    @mock.patch.object(SimpleBayes, 'calculate_category_probability')
     @mock.patch.object(builtins, 'open')
     @mock.patch.object(pickle, 'load')
     @mock.patch.object(os.path, 'exists')
-    def test_cache_train(self, exists_mock, load_mock, open_mock):
+    def test_cache_train(self, exists_mock, load_mock, open_mock, calc_mock):
         categories = BayesCategories()
         categories.categories = {'foo': 'bar'}
 
@@ -251,6 +252,7 @@ class SimpleBayesTests(unittest.TestCase):
         exists_mock.assert_called_once_with('foo/_simplebayes.pickle')
         open_mock.assert_called_once_with('foo/_simplebayes.pickle', 'rb')
         load_mock.assert_called_once_with('opened')
+        calc_mock.assert_called_once_with()
 
         self.assertEqual(sb.categories, categories)
 
