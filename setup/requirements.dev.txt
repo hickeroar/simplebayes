@@ -1,5 +1,4 @@
-nose
-coveralls
+pytest
+pytest-cov
 flake8
-mock
 pylint

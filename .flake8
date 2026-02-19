@@ -1,0 +1,4 @@
+[flake8]
+# Test aggregator uses star imports to register test classes for pytest discovery
+per-file-ignores =
+    tests/test.py: F401,F403

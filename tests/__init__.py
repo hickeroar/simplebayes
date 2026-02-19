@@ -25,14 +25,10 @@ SOFTWARE.
 from simplebayes import SimpleBayes
 from simplebayes.categories import BayesCategories
 import unittest
-import mock
-import pickle
+from unittest.mock import patch, MagicMock
+import builtins
 import os
-try:
-    import __builtin__ as builtins
-except ImportError:
-    # pylint: disable=import-error
-    import builtins
+import pickle
 
 
 class SimpleBayesTests(unittest.TestCase):
@@ -71,10 +67,10 @@ class SimpleBayesTests(unittest.TestCase):
         sb.untrain('foo', 'hello world')
         self.assertEqual(sb.tally('foo'), 1)
 
-    @mock.patch.object(BayesCategories, 'get_category')
+    @patch.object(BayesCategories, 'get_category')
     # pylint: disable=no-self-use
     def test_train_with_existing_category(self, get_category_mock):
-        cat_mock = mock.MagicMock()
+        cat_mock = MagicMock()
         cat_mock.train_token.return_value = None
         get_category_mock.return_value = cat_mock
 
@@ -85,15 +81,15 @@ class SimpleBayesTests(unittest.TestCase):
         cat_mock.train_token.assert_any_call('hello', 2)
         cat_mock.train_token.assert_any_call('world', 1)
 
-    @mock.patch.object(BayesCategories, 'get_category')
-    @mock.patch.object(BayesCategories, 'add_category')
+    @patch.object(BayesCategories, 'get_category')
+    @patch.object(BayesCategories, 'add_category')
     # pylint: disable=no-self-use
     def test_train_with_new_category(
             self,
             add_category_mock,
             get_category_mock
     ):
-        cat_mock = mock.MagicMock()
+        cat_mock = MagicMock()
         cat_mock.train_token.return_value = None
         get_category_mock.side_effect = KeyError()
         add_category_mock.return_value = cat_mock
@@ -105,12 +101,12 @@ class SimpleBayesTests(unittest.TestCase):
         cat_mock.train_token.assert_any_call('hello', 2)
         cat_mock.train_token.assert_any_call('world', 1)
 
-    @mock.patch.object(BayesCategories, 'get_categories')
+    @patch.object(BayesCategories, 'get_categories')
     def test_classify(self, get_categories_mock):
-        cat1_mock = mock.MagicMock()
+        cat1_mock = MagicMock()
         cat1_mock.get_token_count.return_value = 2
         cat1_mock.get_tally.return_value = 8
-        cat2_mock = mock.MagicMock()
+        cat2_mock = MagicMock()
         cat2_mock.get_token_count.return_value = 4
         cat2_mock.get_tally.return_value = 32
 
@@ -133,7 +129,7 @@ class SimpleBayesTests(unittest.TestCase):
         cat2_mock.get_token_count.assert_any_call('world')
         cat2_mock.get_tally.assert_called_once_with()
 
-    @mock.patch.object(BayesCategories, 'get_categories')
+    @patch.object(BayesCategories, 'get_categories')
     def test_classify_without_categories(self, get_categories_mock):
         get_categories_mock.return_value = {}
 
@@ -144,9 +140,9 @@ class SimpleBayesTests(unittest.TestCase):
         assert 2 == get_categories_mock.call_count, \
             get_categories_mock.call_count
 
-    @mock.patch.object(BayesCategories, 'get_categories')
+    @patch.object(BayesCategories, 'get_categories')
     def test_classify_with_empty_category(self, get_categories_mock):
-        cat_mock = mock.MagicMock()
+        cat_mock = MagicMock()
         cat_mock.get_tally.return_value = 0
         cat_mock.get_token_count.return_value = 0
 
@@ -163,12 +159,12 @@ class SimpleBayesTests(unittest.TestCase):
             get_categories_mock.call_count
         cat_mock.get_tally.assert_called_once_with()
 
-    @mock.patch.object(BayesCategories, 'get_categories')
+    @patch.object(BayesCategories, 'get_categories')
     def test_score(self, get_categories_mock):
-        cat1_mock = mock.MagicMock()
+        cat1_mock = MagicMock()
         cat1_mock.get_token_count.return_value = 2
         cat1_mock.get_tally.return_value = 8
-        cat2_mock = mock.MagicMock()
+        cat2_mock = MagicMock()
         cat2_mock.get_token_count.return_value = 4
         cat2_mock.get_tally.return_value = 32
 
@@ -198,12 +194,12 @@ class SimpleBayesTests(unittest.TestCase):
         cat2_mock.get_token_count.assert_any_call('world')
         cat2_mock.get_tally.assert_called_once_with()
 
-    @mock.patch.object(BayesCategories, 'get_categories')
+    @patch.object(BayesCategories, 'get_categories')
     def test_score_with_zero_bayes_denon(self, get_categories_mock):
-        cat1_mock = mock.MagicMock()
+        cat1_mock = MagicMock()
         cat1_mock.get_token_count.return_value = 2
         cat1_mock.get_tally.return_value = 8
-        cat2_mock = mock.MagicMock()
+        cat2_mock = MagicMock()
         cat2_mock.get_token_count.return_value = 4
         cat2_mock.get_tally.return_value = 32
 
@@ -234,16 +230,19 @@ class SimpleBayesTests(unittest.TestCase):
         cat2_mock.get_token_count.assert_any_call('world')
         cat2_mock.get_tally.assert_called_once_with()
 
-    @mock.patch.object(SimpleBayes, 'calculate_category_probability')
-    @mock.patch.object(builtins, 'open')
-    @mock.patch.object(pickle, 'load')
-    @mock.patch.object(os.path, 'exists')
+    @patch.object(SimpleBayes, 'calculate_category_probability')
+    @patch.object(builtins, 'open')
+    @patch.object(pickle, 'load')
+    @patch.object(os.path, 'exists')
     def test_cache_train(self, exists_mock, load_mock, open_mock, calc_mock):
         categories = BayesCategories()
         categories.categories = {'foo': 'bar'}
 
         load_mock.return_value = categories
-        open_mock.return_value = 'opened'
+        file_mock = MagicMock()
+        file_mock.__enter__.return_value = 'opened'
+        file_mock.__exit__.return_value = None
+        open_mock.return_value = file_mock
         exists_mock.return_value = True
 
         sb = SimpleBayes(cache_path='foo')
@@ -256,7 +255,7 @@ class SimpleBayesTests(unittest.TestCase):
 
         self.assertEqual(sb.categories, categories)
 
-    @mock.patch.object(os.path, 'exists')
+    @patch.object(os.path, 'exists')
     def test_cache_train_with_no_file(self, exists_mock):
         exists_mock.return_value = False
 
@@ -266,10 +265,13 @@ class SimpleBayesTests(unittest.TestCase):
         exists_mock.assert_called_once_with('/tmp/_simplebayes.pickle')
         self.assertFalse(result)
 
-    @mock.patch.object(builtins, 'open')
-    @mock.patch.object(pickle, 'dump')
+    @patch.object(builtins, 'open')
+    @patch.object(pickle, 'dump')
     def test_persist_cache(self, dump_mock, open_mock):
-        open_mock.return_value = 'opened'
+        file_mock = MagicMock()
+        file_mock.__enter__.return_value = 'opened'
+        file_mock.__exit__.return_value = None
+        open_mock.return_value = file_mock
 
         categories = BayesCategories()
         categories.categories = {'foo': 'bar'}

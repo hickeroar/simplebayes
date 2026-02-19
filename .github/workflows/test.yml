@@ -1,0 +1,37 @@
+name: Test
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install -r setup/requirements.dev.txt
+
+      - name: Run tests
+        run: pytest tests/ --cov=simplebayes --cov-fail-under=100 -v
+
+      - name: Run flake8
+        run: flake8 simplebayes tests
+
+      - name: Run pylint
+        run: pylint simplebayes tests --exit-zero

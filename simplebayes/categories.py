@@ -24,7 +24,7 @@ SOFTWARE.
 from simplebayes.category import BayesCategory
 
 
-class BayesCategories(object):
+class BayesCategories:
     """Acts as a container for various bayes trained categories of content"""
 
     def __init__(self):
@@ -45,7 +45,7 @@ class BayesCategories(object):
 
     def get_category(self, name):
         """
-        Returns the expected category. Will KeyError if non existant
+        Returns the expected category. Will KeyError if non existent
 
         :param name: name of the category
         :type name: str

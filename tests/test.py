@@ -23,12 +23,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 # pylint: disable=unused-wildcard-import,wildcard-import,unused-import
+# Test aggregator: star imports register test classes (F401/F403 in .flake8)
 
+import simplebayes
+import simplebayes.categories
+import simplebayes.category
 
-import simplebayes  # flake8: noqa
-import simplebayes.categories  # flake8: noqa
-import simplebayes.category  # flake8: noqa
-
-from tests import *  # flake8: noqa
-from tests.categories import *  # flake8: noqa
-from tests.category import *  # flake8: noqa
+from tests import *
+from tests.categories import *
+from tests.category import *
