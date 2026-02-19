@@ -22,17 +22,29 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-from simplebayes.categories import BayesCategories
-import pickle
+__version__ = '2.0.0'
+
 import os
+import pickle
+from collections import Counter
+from pathlib import Path
+from typing import Callable, Dict, List, Optional
+
+from simplebayes.categories import BayesCategories
+
+__all__ = ['SimpleBayes']
 
 
-class SimpleBayes(object):
+class SimpleBayes:
     """A memory-based, optional-persistence naïve bayesian text classifier."""
 
     cache_file = '_simplebayes.pickle'
 
-    def __init__(self, tokenizer=None, cache_path='/tmp/'):
+    def __init__(
+        self,
+        tokenizer: Optional[Callable[[str], List[str]]] = None,
+        cache_path: str = '/tmp/',
+    ) -> None:
         """
         :param tokenizer: A tokenizer override
         :type tokenizer: function (optional)
@@ -45,7 +57,7 @@ class SimpleBayes(object):
         self.probabilities = {}
 
     @classmethod
-    def tokenize_text(cls, text):
+    def tokenize_text(cls, text: str) -> List[str]:
         """
         Default tokenize method; can be overridden
 
@@ -57,7 +69,7 @@ class SimpleBayes(object):
         return [w for w in text.split() if len(w) > 2]
 
     @classmethod
-    def count_token_occurrences(cls, words):
+    def count_token_occurrences(cls, words: List[str]) -> Dict[str, int]:
         """
         Creates a key/value set of word/count for a given sample of text
 
@@ -66,21 +78,15 @@ class SimpleBayes(object):
         :return: key/value pairs of words and their counts in the list
         :rtype: dict
         """
-        counts = {}
-        for word in words:
-            if word in counts:
-                counts[word] += 1
-            else:
-                counts[word] = 1
-        return counts
+        return dict(Counter(words))
 
-    def flush(self):
+    def flush(self) -> None:
         """
         Deletes all tokens & categories
         """
         self.categories = BayesCategories()
 
-    def calculate_category_probability(self):
+    def calculate_category_probability(self) -> None:
         """
         Caches the individual probabilities for each category
         """
@@ -107,7 +113,7 @@ class SimpleBayes(object):
                 'prnc': sum(probs.values()) - probability
             }
 
-    def train(self, category, text):
+    def train(self, category: str, text: str) -> None:
         """
         Trains a category with a sample of text
 
@@ -130,7 +136,7 @@ class SimpleBayes(object):
         # Updating our per-category overall probabilities
         self.calculate_category_probability()
 
-    def untrain(self, category, text):
+    def untrain(self, category: str, text: str) -> None:
         """
         Untrains a category with a sample of text
 
@@ -145,15 +151,15 @@ class SimpleBayes(object):
             return
 
         tokens = self.tokenizer(str(text))
-        occurance_counts = self.count_token_occurrences(tokens)
+        occurrence_counts = self.count_token_occurrences(tokens)
 
-        for word, count in occurance_counts.items():
+        for word, count in occurrence_counts.items():
             bayes_category.untrain_token(word, count)
 
         # Updating our per-category overall probabilities
         self.calculate_category_probability()
 
-    def classify(self, text):
+    def classify(self, text: str) -> Optional[str]:
         """
         Chooses the highest scoring category for a sample of text
 
@@ -167,7 +173,7 @@ class SimpleBayes(object):
             return None
         return sorted(score.items(), key=lambda v: v[1])[-1][0]
 
-    def score(self, text):
+    def score(self, text: str) -> Dict[str, float]:
         """
         Scores a sample of text
 
@@ -198,10 +204,10 @@ class SimpleBayes(object):
             if token_tally == 0.0:
                 continue
 
-            # Calculating bayes probabiltity for this token
+            # Calculating bayes probability for this token
             # http://en.wikipedia.org/wiki/Naive_Bayes_spam_filtering
             for category, token_score in token_scores.items():
-                # Bayes probability * the number of occurances of this token
+                # Bayes probability * the number of occurrences of this token
                 scores[category] += count * \
                     self.calculate_bayesian_probability(
                         category,
@@ -217,7 +223,9 @@ class SimpleBayes(object):
 
         return final_scores
 
-    def calculate_bayesian_probability(self, cat, token_score, token_tally):
+    def calculate_bayesian_probability(
+        self, cat: str, token_score: float, token_tally: float
+    ) -> float:
         """
         Calculates the bayesian probability for a given token/category
 
@@ -246,7 +254,7 @@ class SimpleBayes(object):
         # Returning the calculated bayes probability unless the denom. is 0
         return numerator / denominator if denominator != 0.0 else 0.0
 
-    def tally(self, category):
+    def tally(self, category: str) -> int:
         """
         Gets the tally for a requested category
 
@@ -262,28 +270,25 @@ class SimpleBayes(object):
 
         return bayes_category.get_tally()
 
-    def get_cache_location(self):
+    def get_cache_location(self) -> str:
         """
         Gets the location of the cache file
 
         :return: the location of the cache file
         :rtype: string
         """
-        filename = self.cache_path if \
-            self.cache_path[-1:] == '/' else \
-            self.cache_path + '/'
-        filename += self.cache_file
-        return filename
+        return str(Path(self.cache_path) / self.cache_file)
 
-    def cache_persist(self):
+    def cache_persist(self) -> None:
         """
         Saves the current trained data to the cache.
         This is initiated by the program using this module
         """
         filename = self.get_cache_location()
-        pickle.dump(self.categories, open(filename, 'wb'))
+        with open(filename, 'wb') as cache_file:
+            pickle.dump(self.categories, cache_file)
 
-    def cache_train(self):
+    def cache_train(self) -> bool:
         """
         Loads the data for this classifier from a cache file
 
@@ -295,7 +300,8 @@ class SimpleBayes(object):
         if not os.path.exists(filename):
             return False
 
-        categories = pickle.load(open(filename, 'rb'))
+        with open(filename, 'rb') as cache_file:
+            categories = pickle.load(cache_file)
 
         assert isinstance(categories, BayesCategories), \
             "Cache data is either corrupt or invalid"

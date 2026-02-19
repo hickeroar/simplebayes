@@ -23,7 +23,7 @@ SOFTWARE.
 """
 
 
-class BayesCategory(object):
+class BayesCategory:
     """
     Represents a trainable category of content for bayesian classification
     """
@@ -43,7 +43,7 @@ class BayesCategory(object):
 
         :param word: the token we're going to train
         :type word: str
-        :param count: the number of occurances in the sample
+        :param count: the number of occurrences in the sample
         :type count: int
         """
         if word not in self.tokens:
@@ -58,7 +58,7 @@ class BayesCategory(object):
 
         :param word: the token we're going to train
         :type word: str
-        :param count: the number of occurances in the sample
+        :param count: the number of occurrences in the sample
         :type count: int
         """
         if word not in self.tokens:
@@ -72,7 +72,7 @@ class BayesCategory(object):
 
     def get_token_count(self, word):
         """
-        Gets the count assosicated with a provided token/word
+        Gets the count associated with a provided token/word
 
         :param word: the token we're getting the weight of
         :type word: str

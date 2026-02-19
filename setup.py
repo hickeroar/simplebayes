@@ -1,25 +1,31 @@
 # coding: utf-8
 from setuptools import setup
 
+with open('README.md', 'r') as f:
+    long_description = f.read()
+
 setup (
     name = 'simplebayes',
-    version = '1.5.8',
+    version = '2.0.0',
     url = 'https://github.com/hickeroar/simplebayes',
     author = 'Ryan Vennell',
     author_email = 'ryan.vennell@gmail.com',
     description = 'A memory-based, optional-persistence naïve bayesian text classifier.',
-    long_description = open('README.rst', 'r').read(),
+    long_description = long_description,
     license = 'MIT',
     classifiers = [
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
         'Topic :: Utilities',
     ],
+    python_requires='>=3.8',
     packages = ['simplebayes'],
+    package_data = {'simplebayes': ['py.typed']},
 )
