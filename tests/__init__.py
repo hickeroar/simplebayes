@@ -1,26 +1,3 @@
-"""
-The MIT License (MIT)
-
-Copyright (c) 2015 Ryan Vennell
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-"""
 # pylint: disable=invalid-name,missing-docstring,no-self-use
 from simplebayes import SimpleBayes
 from simplebayes.categories import BayesCategories
@@ -255,6 +232,32 @@ class SimpleBayesTests(unittest.TestCase):
 
         self.assertEqual(sb.categories, categories)
 
+    @patch.object(SimpleBayes, 'calculate_category_probability')
+    @patch.object(builtins, 'open')
+    @patch.object(pickle, 'load')
+    @patch.object(os.path, 'exists')
+    def test_cache_train_with_custom_cache_file(
+            self, exists_mock, load_mock, open_mock, calc_mock):
+        categories = BayesCategories()
+        categories.categories = {'foo': 'bar'}
+
+        load_mock.return_value = categories
+        file_mock = MagicMock()
+        file_mock.__enter__.return_value = 'opened'
+        file_mock.__exit__.return_value = None
+        open_mock.return_value = file_mock
+        exists_mock.return_value = True
+
+        sb = SimpleBayes(cache_path='foo', cache_file='bar.pickle')
+        sb.cache_train()
+
+        exists_mock.assert_called_once_with('foo/bar.pickle')
+        open_mock.assert_called_once_with('foo/bar.pickle', 'rb')
+        load_mock.assert_called_once_with('opened')
+        calc_mock.assert_called_once_with()
+
+        self.assertEqual(sb.categories, categories)
+
     @patch.object(os.path, 'exists')
     def test_cache_train_with_no_file(self, exists_mock):
         exists_mock.return_value = False
@@ -267,7 +270,7 @@ class SimpleBayesTests(unittest.TestCase):
 
     @patch.object(builtins, 'open')
     @patch.object(pickle, 'dump')
-    def test_persist_cache(self, dump_mock, open_mock):
+    def test_cache_persist(self, dump_mock, open_mock):
         file_mock = MagicMock()
         file_mock.__enter__.return_value = 'opened'
         file_mock.__exit__.return_value = None
@@ -283,3 +286,28 @@ class SimpleBayesTests(unittest.TestCase):
 
         open_mock.assert_called_once_with('/tmp/_simplebayes.pickle', 'wb')
         dump_mock.assert_called_once_with(categories, 'opened')
+
+    @patch.object(builtins, 'open')
+    @patch.object(pickle, 'dump')
+    def test_cache_persist_with_custom_cache_file(self, dump_mock, open_mock):
+        file_mock = MagicMock()
+        file_mock.__enter__.return_value = 'opened'
+        file_mock.__exit__.return_value = None
+        open_mock.return_value = file_mock
+
+        categories = BayesCategories()
+        categories.categories = {'foo': 'bar'}
+
+        sb = SimpleBayes(cache_path='tmp', cache_file='data.pickle')
+        sb.categories = categories
+        sb.cache_persist()
+
+        open_mock.assert_called_once_with('tmp/data.pickle', 'wb')
+        dump_mock.assert_called_once_with(categories, 'opened')
+
+    def test_get_cache_location_multiple_instances(self):
+        sb1 = SimpleBayes(cache_path='tmp', cache_file='a.pickle')
+        sb2 = SimpleBayes(cache_path='tmp', cache_file='b.pickle')
+
+        self.assertEqual(sb1.get_cache_location(), 'tmp/a.pickle')
+        self.assertEqual(sb2.get_cache_location(), 'tmp/b.pickle')

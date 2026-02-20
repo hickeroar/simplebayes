@@ -1,27 +1,4 @@
 # coding: utf-8
-"""
-The MIT License (MIT)
-
-Copyright (c) 2015 Ryan Vennell
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-"""
 __version__ = '2.0.0'
 
 import os
@@ -38,22 +15,24 @@ __all__ = ['SimpleBayes']
 class SimpleBayes:
     """A memory-based, optional-persistence naïve bayesian text classifier."""
 
-    cache_file = '_simplebayes.pickle'
-
     def __init__(
         self,
         tokenizer: Optional[Callable[[str], List[str]]] = None,
         cache_path: str = '/tmp/',
+        cache_file: str = '_simplebayes.pickle',
     ) -> None:
         """
         :param tokenizer: A tokenizer override
         :type tokenizer: function (optional)
         :param cache_path: path to data storage
         :type cache_path: str
+        :param cache_file: cache filename to persist/load
+        :type cache_file: str
         """
         self.categories = BayesCategories()
         self.tokenizer = tokenizer or SimpleBayes.tokenize_text
         self.cache_path = cache_path
+        self.cache_file = cache_file
         self.probabilities = {}
 
     @classmethod
