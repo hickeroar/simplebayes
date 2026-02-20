@@ -6,11 +6,13 @@ with open('README.md', 'r') as f:
 
 setup(
     name='simplebayes',
-    version='2.0.0',
+    version='2.1.0',
     url='https://github.com/hickeroar/simplebayes',
     author='Ryan Vennell',
     author_email='ryan.vennell@gmail.com',
-    description='A memory-based, optional-persistence naïve bayesian text classifier.',
+    description=(
+        'A memory-based, optional-persistence naïve bayesian text classifier.'
+    ),
     long_description=long_description,
     license='MIT',
     classifiers=[
