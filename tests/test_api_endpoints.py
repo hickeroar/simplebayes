@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+import pytest
 
 from simplebayes.api.app import create_app
 
@@ -52,3 +53,80 @@ def test_wrong_method_returns_405():
     client = TestClient(create_app())
     response = client.get("/classify")
     assert response.status_code == 405
+
+
+def test_auth_required_for_non_probe_endpoints():
+    client = TestClient(create_app(auth_token="secret-token"))
+
+    unauthorized = client.get("/info")
+    assert unauthorized.status_code == 401
+    assert unauthorized.json() == {"error": "unauthorized"}
+    assert unauthorized.headers["www-authenticate"] == 'Bearer realm="simplebayes"'
+
+    wrong_token = client.get("/info", headers={"Authorization": "Bearer wrong-token"})
+    assert wrong_token.status_code == 401
+    assert wrong_token.json() == {"error": "unauthorized"}
+
+    authorized = client.get("/info", headers={"Authorization": "Bearer secret-token"})
+    assert authorized.status_code == 200
+
+
+def test_probes_remain_unauthenticated_with_auth_enabled():
+    client = TestClient(create_app(auth_token="secret-token"))
+    assert client.get("/healthz").status_code == 200
+    assert client.get("/readyz").status_code == 200
+
+
+def test_payload_too_large_returns_413():
+    client = TestClient(create_app())
+    too_large = "x" * (1024 * 1024 + 1)
+    response = client.post(
+        "/score",
+        content=too_large,
+        headers={"Content-Type": "text/plain"},
+    )
+    assert response.status_code == 413
+    assert response.json() == {"error": "request body too large"}
+
+
+@pytest.mark.parametrize(
+    "method,path",
+    [
+        ("post", "/train/spam"),
+        ("post", "/untrain/spam"),
+        ("post", "/classify"),
+        ("post", "/score"),
+        ("post", "/flush"),
+    ],
+)
+def test_auth_rejected_for_each_mutating_endpoint(method, path):
+    client = TestClient(create_app(auth_token="secret-token"))
+    response = getattr(client, method)(
+        path,
+        content="body",
+        headers={"Content-Type": "text/plain"},
+    )
+    assert response.status_code == 401
+    assert response.json() == {"error": "unauthorized"}
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/train/spam",
+        "/untrain/spam",
+        "/classify",
+        "/score",
+        "/flush",
+    ],
+)
+def test_payload_too_large_for_each_text_endpoint(path):
+    client = TestClient(create_app())
+    too_large = "x" * (1024 * 1024 + 1)
+    response = client.post(
+        path,
+        content=too_large,
+        headers={"Content-Type": "text/plain"},
+    )
+    assert response.status_code == 413
+    assert response.json() == {"error": "request body too large"}
