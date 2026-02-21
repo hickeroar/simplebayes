@@ -18,6 +18,8 @@ Once the model is trained, you can:
 ```
 
 ## Installation
+Requires Python 3.10 or newer.
+
 ```
 $ git clone https://github.com/hickeroar/simplebayes.git
 $ cd simplebayes
