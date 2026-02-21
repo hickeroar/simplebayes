@@ -283,8 +283,8 @@ class SimpleBayes:
         prtc = token_score / token_tally
 
         # Assembling the parts of the bayes equation
-        numerator = (prtc * prc)
-        denominator = (numerator + (prtnc * prnc))
+        numerator = prtc * prc
+        denominator = numerator + (prtnc * prnc)
 
         # Returning the calculated bayes probability unless the denom. is 0
         return numerator / denominator if denominator != 0.0 else 0.0

@@ -1,4 +1,4 @@
-# pylint: disable=invalid-name,missing-docstring,no-self-use
+# pylint: disable=invalid-name,missing-docstring
 from simplebayes.category import BayesCategory
 import unittest
 

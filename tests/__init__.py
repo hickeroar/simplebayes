@@ -1,11 +1,12 @@
-# pylint: disable=invalid-name,missing-docstring,no-self-use
-from simplebayes import SimpleBayes
-from simplebayes.categories import BayesCategories
+# pylint: disable=invalid-name,missing-docstring
 import unittest
-from unittest.mock import patch, MagicMock
 import builtins
 import os
 import pickle
+from unittest.mock import patch, MagicMock
+
+from simplebayes import SimpleBayes
+from simplebayes.categories import BayesCategories
 
 from simplebayes.errors import InvalidCategoryError
 
@@ -48,7 +49,6 @@ class SimpleBayesTests(unittest.TestCase):
         self.assertEqual(sb.tally('foo'), 1)
 
     @patch.object(BayesCategories, 'get_category')
-    # pylint: disable=no-self-use
     def test_train_with_existing_category(self, get_category_mock):
         cat_mock = MagicMock()
         cat_mock.train_token.return_value = None
@@ -63,7 +63,6 @@ class SimpleBayesTests(unittest.TestCase):
 
     @patch.object(BayesCategories, 'get_category')
     @patch.object(BayesCategories, 'add_category')
-    # pylint: disable=no-self-use
     def test_train_with_new_category(
             self,
             add_category_mock,

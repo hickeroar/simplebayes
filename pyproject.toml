@@ -7,7 +7,8 @@ name = "simplebayes"
 version = "3.0.0"
 description = "A memory-based, optional-persistence naïve bayesian text classifier."
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [
     {name = "Ryan Vennell", email = "ryan.vennell@gmail.com"}
@@ -21,7 +22,6 @@ dependencies = [
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -46,3 +46,9 @@ branch = false
 [tool.coverage.report]
 fail_under = 100
 show_missing = true
+
+[tool.setuptools.packages.find]
+include = ["simplebayes", "simplebayes.*"]
+
+[tool.setuptools.package-data]
+simplebayes = ["py.typed"]

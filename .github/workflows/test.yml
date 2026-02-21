@@ -58,7 +58,7 @@ jobs:
           pip install -r setup/requirements.dev.txt
 
       - name: Run API integration slice
-        run: pytest tests/test_api_endpoints.py -v
+        run: pytest tests/test_api_endpoints.py tests/test_cli_integration.py -v
 
   packaging-smoke:
     runs-on: ubuntu-latest
