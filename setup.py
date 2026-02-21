@@ -1,5 +1,5 @@
 # coding: utf-8
-from setuptools import setup
+from setuptools import find_packages, setup
 
 with open('README.md', 'r') as f:
     long_description = f.read()
@@ -33,6 +33,9 @@ setup(
         'fastapi>=0.116.1',
         'uvicorn[standard]>=0.35.0',
     ],
-    packages=['simplebayes'],
+    packages=find_packages(include=['simplebayes', 'simplebayes.*']),
     package_data={'simplebayes': ['py.typed']},
+    entry_points={
+        'console_scripts': ['simplebayes-server=simplebayes.cli:run'],
+    },
 )

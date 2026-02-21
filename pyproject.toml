@@ -31,6 +31,9 @@ classifiers = [
     "Topic :: Utilities",
 ]
 
+[project.scripts]
+simplebayes-server = "simplebayes.cli:run"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v"
