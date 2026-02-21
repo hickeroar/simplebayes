@@ -311,3 +311,32 @@ class SimpleBayesTests(unittest.TestCase):
 
         self.assertEqual(sb1.get_cache_location(), 'tmp/a.pickle')
         self.assertEqual(sb2.get_cache_location(), 'tmp/b.pickle')
+
+    def test_classify_result(self):
+        sb = SimpleBayes()
+        sb.train('good', 'bright happy joy')
+        sb.train('bad', 'sad dark doom')
+
+        result = sb.classify_result('bright joy')
+
+        self.assertEqual(result.category, 'good')
+        self.assertGreater(result.score, 0)
+
+    def test_classify_result_empty(self):
+        sb = SimpleBayes()
+
+        result = sb.classify_result('anything')
+
+        self.assertIsNone(result.category)
+        self.assertEqual(result.score, 0.0)
+
+    def test_get_summaries(self):
+        sb = SimpleBayes()
+        sb.train('alpha', 'one two three')
+
+        summaries = sb.get_summaries()
+
+        self.assertIn('alpha', summaries)
+        self.assertEqual(summaries['alpha'].token_tally, 3)
+        self.assertGreaterEqual(summaries['alpha'].prob_in_cat, 0.0)
+        self.assertGreaterEqual(summaries['alpha'].prob_not_in_cat, 0.0)

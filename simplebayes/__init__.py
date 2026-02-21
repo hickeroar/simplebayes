@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
 from simplebayes.categories import BayesCategories
+from simplebayes.models import CategorySummary, ClassificationResult
 
 __all__ = ['SimpleBayes']
 
@@ -152,6 +153,17 @@ class SimpleBayes:
             return None
         return sorted(score.items(), key=lambda v: v[1])[-1][0]
 
+    def classify_result(self, text: str) -> ClassificationResult:
+        """
+        Returns structured classification output including score.
+        """
+        scores = self.score(text)
+        if not scores:
+            return ClassificationResult(category=None, score=0.0)
+
+        category, score = sorted(scores.items(), key=lambda item: item[1])[-1]
+        return ClassificationResult(category=category, score=float(score))
+
     def score(self, text: str) -> Dict[str, float]:
         """
         Scores a sample of text
@@ -248,6 +260,26 @@ class SimpleBayes:
             return 0
 
         return bayes_category.get_tally()
+
+    def get_summaries(self) -> Dict[str, CategorySummary]:
+        """
+        Returns per-category summary details.
+        """
+        summaries: Dict[str, CategorySummary] = {}
+        categories = self.categories.get_categories()
+
+        for category_name, category in categories.items():
+            category_probability = self.probabilities.get(
+                category_name,
+                {'prc': 0.0, 'prnc': 0.0},
+            )
+            summaries[category_name] = CategorySummary(
+                token_tally=category.get_tally(),
+                prob_in_cat=float(category_probability['prc']),
+                prob_not_in_cat=float(category_probability['prnc']),
+            )
+
+        return summaries
 
     def get_cache_location(self) -> str:
         """
