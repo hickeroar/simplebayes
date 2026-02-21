@@ -29,7 +29,7 @@ classifiers = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v"
-python_files = ["test_*.py", "test.py", "*_test.py"]
+python_files = ["test_*.py"]
 python_functions = ["test_*"]
 
 [tool.coverage.run]
