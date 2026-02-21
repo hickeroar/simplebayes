@@ -14,7 +14,9 @@ authors = [
 ]
 keywords = ["bayes", "classifier", "naive", "text", "spam"]
 dependencies = [
+    "fastapi>=0.116.1",
     "snowballstemmer>=3.0.1",
+    "uvicorn[standard]>=0.35.0",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
