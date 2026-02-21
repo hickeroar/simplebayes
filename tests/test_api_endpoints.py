@@ -5,9 +5,28 @@ from simplebayes.api.app import create_app
 
 
 def test_health_and_ready_endpoints():
-    client = TestClient(create_app())
+    app = create_app()
+    client = TestClient(app)
     assert client.get("/healthz").json() == {"status": "ok"}
     assert client.get("/readyz").json() == {"status": "ready"}
+
+
+def test_readyz_returns_503_when_not_ready():
+    app = create_app()
+    app.state.readiness.mark_not_ready()
+    client = TestClient(app)
+    response = client.get("/readyz")
+    assert response.status_code == 503
+    assert response.json() == {"status": "not ready"}
+
+
+def test_lifespan_marks_not_ready_on_shutdown():
+    app = create_app()
+    with TestClient(app) as client:
+        assert client.get("/readyz").status_code == 200
+        assert app.state.readiness.is_ready is True
+
+    assert app.state.readiness.is_ready is False
 
 
 def test_train_info_score_classify_and_flush_flow():

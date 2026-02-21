@@ -11,6 +11,7 @@ from simplebayes.api.schemas import (
     InfoResponse,
     MutationResponse,
 )
+from simplebayes.runtime.readiness import ReadinessState
 
 CATEGORY_REGEX = r"^[-_A-Za-z0-9]{1,64}$"
 MAX_REQUEST_BODY_BYTES = 1024 * 1024
@@ -61,7 +62,11 @@ def _parse_payload(payload: bytes) -> tuple[str, JSONResponse | None]:
     return payload.decode("utf-8", errors="ignore"), None
 
 
-def create_router(classifier: SimpleBayes, auth_token: str = "") -> APIRouter:
+def create_router(
+    classifier: SimpleBayes,
+    readiness: ReadinessState,
+    auth_token: str = "",
+) -> APIRouter:
     router = APIRouter()
 
     @router.get("/info", response_model=InfoResponse)
@@ -148,7 +153,9 @@ def create_router(classifier: SimpleBayes, auth_token: str = "") -> APIRouter:
         return {"status": "ok"}
 
     @router.get("/readyz")
-    def readyz() -> Dict[str, str]:
-        return {"status": "ready"}
+    def readyz():
+        if readiness.is_ready:
+            return {"status": "ready"}
+        return JSONResponse(status_code=503, content={"status": "not ready"})
 
     return router
