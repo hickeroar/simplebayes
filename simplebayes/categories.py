@@ -37,3 +37,12 @@ class BayesCategories:
         :rtype: dict
         """
         return self.categories
+
+    def delete_category(self, name):
+        """
+        Deletes an existing category when present.
+
+        :param name: name of the category
+        :type name: str
+        """
+        self.categories.pop(name, None)

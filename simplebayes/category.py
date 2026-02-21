@@ -44,6 +44,8 @@ class BayesCategory:
 
         self.tokens[word] -= count
         self.tally -= count
+        if self.tokens[word] <= 0:
+            del self.tokens[word]
 
     def get_token_count(self, word):
         """

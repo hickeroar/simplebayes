@@ -7,6 +7,7 @@ import builtins
 import os
 import pickle
 
+from simplebayes.errors import InvalidCategoryError
 
 class SimpleBayesTests(unittest.TestCase):
 
@@ -340,3 +341,25 @@ class SimpleBayesTests(unittest.TestCase):
         self.assertEqual(summaries['alpha'].token_tally, 3)
         self.assertGreaterEqual(summaries['alpha'].prob_in_cat, 0.0)
         self.assertGreaterEqual(summaries['alpha'].prob_not_in_cat, 0.0)
+
+    def test_train_invalid_category_raises(self):
+        sb = SimpleBayes()
+        with self.assertRaises(InvalidCategoryError):
+            sb.train('bad category', 'text')
+        with self.assertRaises(InvalidCategoryError):
+            sb.train(None, 'text')  # type: ignore[arg-type]
+
+    def test_untrain_removes_empty_category(self):
+        sb = SimpleBayes()
+        sb.train('alpha', 'one two three')
+        sb.untrain('alpha', 'one two three')
+        self.assertNotIn('alpha', sb.categories.get_categories())
+
+    def test_classify_tie_breaks_lexically(self):
+        sb = SimpleBayes()
+        sb.train('zeta', 'match token')
+        sb.train('alpha', 'match token')
+
+        result = sb.classify('match token')
+
+        self.assertEqual(result, 'alpha')

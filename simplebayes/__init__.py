@@ -3,14 +3,18 @@ __version__ = '2.1.0'
 
 import os
 import pickle
+import re
 from collections import Counter
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
 from simplebayes.categories import BayesCategories
+from simplebayes.errors import InvalidCategoryError
 from simplebayes.models import CategorySummary, ClassificationResult
 
 __all__ = ['SimpleBayes']
+
+CATEGORY_PATTERN = re.compile(r"^[-_A-Za-z0-9]{1,64}$")
 
 
 class SimpleBayes:
@@ -102,6 +106,7 @@ class SimpleBayes:
         :param text: the text we want to train the category with
         :type text: str
         """
+        category = self.normalize_category(category)
         try:
             bayes_category = self.categories.get_category(category)
         except KeyError:
@@ -125,6 +130,7 @@ class SimpleBayes:
         :param text: the text we want to untrain the category with
         :type text: str
         """
+        category = self.normalize_category(category)
         try:
             bayes_category = self.categories.get_category(category)
         except KeyError:
@@ -135,6 +141,9 @@ class SimpleBayes:
 
         for word, count in occurrence_counts.items():
             bayes_category.untrain_token(word, count)
+
+        if bayes_category.get_tally() == 0:
+            self.categories.delete_category(category)
 
         # Updating our per-category overall probabilities
         self.calculate_category_probability()
@@ -151,7 +160,16 @@ class SimpleBayes:
         score = self.score(text)
         if not score:
             return None
-        return sorted(score.items(), key=lambda v: v[1])[-1][0]
+
+        highest_category = ''
+        highest_score = 0.0
+        for category in sorted(score.keys()):
+            category_score = float(score[category])
+            if category_score > highest_score:
+                highest_score = category_score
+                highest_category = category
+
+        return highest_category or None
 
     def classify_result(self, text: str) -> ClassificationResult:
         """
@@ -161,8 +179,15 @@ class SimpleBayes:
         if not scores:
             return ClassificationResult(category=None, score=0.0)
 
-        category, score = sorted(scores.items(), key=lambda item: item[1])[-1]
-        return ClassificationResult(category=category, score=float(score))
+        highest_category = ''
+        highest_score = 0.0
+        for category in sorted(scores.keys()):
+            category_score = float(scores[category])
+            if category_score > highest_score:
+                highest_score = category_score
+                highest_category = category
+
+        return ClassificationResult(category=highest_category or None, score=highest_score)
 
     def score(self, text: str) -> Dict[str, float]:
         """
@@ -323,3 +348,19 @@ class SimpleBayes:
         self.calculate_category_probability()
 
         return True
+
+    @classmethod
+    def normalize_category(cls, category: str) -> str:
+        """
+        Validates and normalizes category input.
+        """
+        if category is None:
+            raise InvalidCategoryError("category is required")
+
+        normalized = str(category).strip()
+        if not CATEGORY_PATTERN.match(normalized):
+            raise InvalidCategoryError(
+                "category must be 1-64 chars and only include letters, numbers, underscore, or hyphen",
+            )
+
+        return normalized
