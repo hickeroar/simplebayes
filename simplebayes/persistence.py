@@ -1,9 +1,9 @@
 import json
 import os
-import re
 import tempfile
 from typing import Dict, TextIO
 
+from simplebayes.constants import CATEGORY_PATTERN
 from simplebayes.errors import (
     InvalidModelStateError,
     PersistencePathError,
@@ -12,7 +12,6 @@ from simplebayes.errors import (
 
 PERSISTED_MODEL_VERSION = 1
 DEFAULT_MODEL_FILE_PATH = "/tmp/simplebayes-model.json"
-CATEGORY_PATTERN = re.compile(r"^[-_A-Za-z0-9]{1,64}$")
 
 
 def dump_model_state(stream: TextIO, model_state: Dict) -> None:

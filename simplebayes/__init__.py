@@ -1,15 +1,12 @@
 # coding: utf-8
 __version__ = '3.0.0'
 
-import os
-import pickle
-import re
 import threading
 from collections import Counter
-from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
 from simplebayes.categories import BayesCategories
+from simplebayes.constants import CATEGORY_PATTERN
 from simplebayes.errors import InvalidCategoryError
 from simplebayes.models import CategorySummary, ClassificationResult
 from simplebayes.persistence import (
@@ -24,8 +21,6 @@ from simplebayes.tokenization import default_tokenize_text
 
 __all__ = ['SimpleBayes']
 
-CATEGORY_PATTERN = re.compile(r"^[-_A-Za-z0-9]{1,64}$")
-
 
 class SimpleBayes:
     """A memory-based, optional-persistence naïve bayesian text classifier."""
@@ -33,21 +28,13 @@ class SimpleBayes:
     def __init__(
         self,
         tokenizer: Optional[Callable[[str], List[str]]] = None,
-        cache_path: str = '/tmp/',
-        cache_file: str = '_simplebayes.pickle',
     ) -> None:
         """
         :param tokenizer: A tokenizer override
         :type tokenizer: function (optional)
-        :param cache_path: path to data storage
-        :type cache_path: str
-        :param cache_file: cache filename to persist/load
-        :type cache_file: str
         """
         self.categories = BayesCategories()
         self.tokenizer = tokenizer or default_tokenize_text
-        self.cache_path = cache_path
-        self.cache_file = cache_file
         self.probabilities = {}
         self._lock = threading.RLock()
 
@@ -103,13 +90,15 @@ class SimpleBayes:
                 else:
                     probs[category] = 0.0
 
+            new_probabilities = {}
             for category, probability in probs.items():
-                self.probabilities[category] = {
+                new_probabilities[category] = {
                     # Probability that any given token is of this category
                     'prc': probability,
                     # Probability that any given token is not of this category
-                    'prnc': sum(probs.values()) - probability
+                    'prnc': 1.0 - probability
                 }
+            self.probabilities = new_probabilities
 
     def train(self, category: str, text: str) -> None:
         """
@@ -175,18 +164,8 @@ class SimpleBayes:
         """
         with self._lock:
             score = self.score(text)
-            if not score:
-                return None
-
-            highest_category = ''
-            highest_score = 0.0
-            for category in sorted(score.keys()):
-                category_score = float(score[category])
-                if category_score > highest_score:
-                    highest_score = category_score
-                    highest_category = category
-
-            return highest_category or None
+            highest_category, _ = self._find_highest_category(score)
+            return highest_category
 
     def classify_result(self, text: str) -> ClassificationResult:
         """
@@ -194,18 +173,23 @@ class SimpleBayes:
         """
         with self._lock:
             scores = self.score(text)
-            if not scores:
-                return ClassificationResult(category=None, score=0.0)
-
-            highest_category = ''
-            highest_score = 0.0
-            for category in sorted(scores.keys()):
-                category_score = float(scores[category])
-                if category_score > highest_score:
-                    highest_score = category_score
-                    highest_category = category
-
+            highest_category, highest_score = self._find_highest_category(scores)
             return ClassificationResult(category=highest_category or None, score=highest_score)
+
+    @classmethod
+    def _find_highest_category(cls, scores: Dict[str, float]) -> tuple[Optional[str], float]:
+        if not scores:
+            return None, 0.0
+
+        highest_category = None
+        highest_score = 0.0
+        for category in sorted(scores.keys()):
+            category_score = float(scores[category])
+            if category_score > highest_score:
+                highest_score = category_score
+                highest_category = category
+
+        return highest_category, highest_score
 
     def score(self, text: str) -> Dict[str, float]:
         """
@@ -219,7 +203,7 @@ class SimpleBayes:
         with self._lock:
             occurs = self.count_token_occurrences(self.tokenizer(text))
             scores = {}
-            for category in self.categories.get_categories().keys():
+            for category in self.categories.get_categories():
                 scores[category] = 0
 
             categories = self.categories.get_categories().items()
@@ -327,51 +311,6 @@ class SimpleBayes:
 
             return summaries
 
-    def get_cache_location(self) -> str:
-        """
-        Gets the location of the cache file
-
-        :return: the location of the cache file
-        :rtype: string
-        """
-        return str(Path(self.cache_path) / self.cache_file)
-
-    def cache_persist(self) -> None:
-        """
-        Saves the current trained data to the cache.
-        This is initiated by the program using this module
-        """
-        with self._lock:
-            filename = self.get_cache_location()
-            with open(filename, 'wb') as cache_file:
-                pickle.dump(self.categories, cache_file)
-
-    def cache_train(self) -> bool:
-        """
-        Loads the data for this classifier from a cache file
-
-        :return: whether or not we were successful
-        :rtype: bool
-        """
-        with self._lock:
-            filename = self.get_cache_location()
-
-            if not os.path.exists(filename):
-                return False
-
-            with open(filename, 'rb') as cache_file:
-                categories = pickle.load(cache_file)
-
-            assert isinstance(categories, BayesCategories), \
-                "Cache data is either corrupt or invalid"
-
-            self.categories = categories
-
-            # Updating our per-category overall probabilities
-            self.calculate_category_probability()
-
-            return True
-
     def save(self, destination) -> None:
         """
         Saves classifier state to a text stream.
@@ -405,7 +344,7 @@ class SimpleBayes:
             self._apply_model_state(state)
 
     @classmethod
-    def normalize_category(cls, category: str) -> str:
+    def normalize_category(cls, category: str | None) -> str:
         """
         Validates and normalizes category input.
         """

@@ -2,12 +2,15 @@
 
 All notable changes to this project are documented here.
 
-## v3.0.0 - Unreleased
+## v3.0.0
 
 ### Breaking
 - Introduced a full HTTP API runtime with CLI entrypoint and expanded package layout.
 - Added typed classification/result contracts and stricter category validation semantics.
 - Added versioned JSON model persistence APIs (`save`/`load`, `save_to_file`/`load_from_file`) with validation and atomic file writes.
+- Removed legacy pickle persistence APIs (`cache_train`, `cache_persist`, `get_cache_location`) in favor of JSON-only persistence.
+- Removed legacy `SimpleBayes` constructor cache arguments (`cache_path`, `cache_file`).
+- `/classify` now returns `category: null` when no category can be selected.
 
 ### Added
 - FastAPI API surface:

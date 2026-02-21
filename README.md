@@ -121,9 +121,10 @@ $ ./.venv/bin/pylint simplebayes tests --exit-zero
 ### API Notes
 - Category names in `/train/{category}` and `/untrain/{category}` must match `^[-_A-Za-z0-9]{1,64}$`.
 - Request body size is capped at 1 MiB on text endpoints.
-- Error responses for auth/size are JSON:
+- Error responses for auth/size/encoding are JSON:
   - `{"error":"unauthorized"}`
   - `{"error":"request body too large"}`
+  - `{"error":"invalid utf-8 payload"}`
 - The HTTP service stores classifier state in memory; process restarts clear training data.
 
 ### Common Error Responses
@@ -131,6 +132,7 @@ $ ./.venv/bin/pylint simplebayes tests --exit-zero
 | --- | --- |
 | `401` | Missing/invalid bearer token when auth is enabled |
 | `405` | Wrong HTTP method |
+| `400` | Request body contains invalid UTF-8 |
 | `413` | Request body exceeds 1 MiB |
 | `422` | Invalid category route format |
 
@@ -198,6 +200,8 @@ Example response:
   "score": 3.2142857142857144
 }
 ```
+
+If no category can be selected (for example, untrained model), `category` is returned as `null`.
 
 ### Scoring Text
 

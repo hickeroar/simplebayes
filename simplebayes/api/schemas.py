@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 
 from pydantic import BaseModel
 
@@ -19,5 +19,5 @@ class MutationResponse(BaseModel):
 
 
 class ClassificationResponse(BaseModel):
-    category: str
+    category: Optional[str]
     score: float

@@ -108,6 +108,29 @@ def test_payload_too_large_returns_413():
     assert response.json() == {"error": "request body too large"}
 
 
+def test_classify_returns_null_category_when_untrained():
+    client = TestClient(create_app())
+    response = client.post(
+        "/classify",
+        content="anything",
+        headers={"Content-Type": "text/plain"},
+    )
+    assert response.status_code == 200
+    assert response.json() == {"category": None, "score": 0.0}
+
+
+@pytest.mark.parametrize("path", ["/train/spam", "/classify", "/score"])
+def test_invalid_utf8_payload_returns_400(path):
+    client = TestClient(create_app())
+    response = client.post(
+        path,
+        content=b"\xff\xfe\xfa",
+        headers={"Content-Type": "text/plain"},
+    )
+    assert response.status_code == 400
+    assert response.json() == {"error": "invalid utf-8 payload"}
+
+
 @pytest.mark.parametrize(
     "method,path",
     [

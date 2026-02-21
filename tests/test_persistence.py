@@ -7,6 +7,7 @@ import pytest
 
 from simplebayes import SimpleBayes
 from simplebayes.errors import (
+    InvalidCategoryError,
     InvalidModelStateError,
     PersistencePathError,
     UnsupportedModelVersionError,
@@ -138,8 +139,29 @@ def test_load_rejects_invalid_payload():
         "categories": {"bad category": {"tally": 1, "tokens": {"x": 1}}},
     }
     payload = io.StringIO(json.dumps(state))
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidModelStateError, match="invalid category name"):
         classifier.load(payload)
+
+
+def test_category_validation_consistent_between_runtime_and_persistence():
+    for category in ["alpha-1", "A_B", "x" * 64]:
+        assert SimpleBayes.normalize_category(category) == category
+        validate_model_state(
+            {
+                "version": PERSISTED_MODEL_VERSION,
+                "categories": {category: {"tally": 1, "tokens": {"token": 1}}},
+            },
+        )
+
+    with pytest.raises(InvalidCategoryError):
+        SimpleBayes.normalize_category("bad category")
+    with pytest.raises(InvalidModelStateError, match="invalid category name"):
+        validate_model_state(
+            {
+                "version": PERSISTED_MODEL_VERSION,
+                "categories": {"bad category": {"tally": 1, "tokens": {"token": 1}}},
+            },
+        )
 
 
 def test_save_model_state_cleanup_on_replace_failure(monkeypatch):

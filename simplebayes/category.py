@@ -15,7 +15,7 @@ class BayesCategory:
         self.tokens: Dict[str, int] = {}
         self.tally: int = 0
 
-    def train_token(self, word: str, count: int):
+    def train_token(self, word: str, count: int) -> None:
         """
         Trains a particular token (increases the weight/count of it)
 
@@ -30,7 +30,7 @@ class BayesCategory:
         self.tokens[word] += count
         self.tally += count
 
-    def untrain_token(self, word: str, count: int):
+    def untrain_token(self, word: str, count: int) -> None:
         """
         Untrains a particular token (decreases the weight/count of it)
 

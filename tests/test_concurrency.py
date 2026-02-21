@@ -15,7 +15,10 @@ def test_parallel_train_and_score_completes():
 
     result = classifier.classify_result("python service")
     assert result.category == "tech"
-    assert result.score >= 0
+    assert result.score > 0
+    summaries = classifier.get_summaries()
+    assert summaries["tech"].token_tally == 250
+    assert classifier.tally("tech") == 250
 
 
 def test_parallel_classify_during_mutation():
@@ -38,4 +41,9 @@ def test_parallel_classify_during_mutation():
         for future in futures:
             future.result()
 
-    assert classifier.tally("alpha") >= 0
+    assert classifier.tally("alpha") == 103
+    assert classifier.tally("beta") == 3
+    summaries = classifier.get_summaries()
+    assert summaries["alpha"].token_tally == 103
+    assert summaries["beta"].token_tally == 3
+    assert abs((summaries["alpha"].prob_in_cat + summaries["alpha"].prob_not_in_cat) - 1.0) < 1e-12

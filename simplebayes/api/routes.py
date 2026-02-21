@@ -59,7 +59,13 @@ def _parse_payload(payload: bytes) -> tuple[str, JSONResponse | None]:
             content={"error": "request body too large"},
         )
 
-    return payload.decode("utf-8", errors="ignore"), None
+    try:
+        return payload.decode("utf-8"), None
+    except UnicodeDecodeError:
+        return "", JSONResponse(
+            status_code=400,
+            content={"error": "invalid utf-8 payload"},
+        )
 
 
 def create_router(
@@ -121,7 +127,7 @@ def create_router(
             return payload_response
 
         result = classifier.classify_result(text)
-        return ClassificationResponse(category=result.category or "", score=result.score)
+        return ClassificationResponse(category=result.category, score=result.score)
 
     @router.post("/score")
     def score(request: Request, payload: bytes = Body(b"", media_type="text/plain")):

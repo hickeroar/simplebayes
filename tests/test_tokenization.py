@@ -22,3 +22,13 @@ def test_default_tokenize_text_stems_words():
 def test_default_tokenize_text_nfkc_normalization():
     tokens = default_tokenize_text("Ｆｏｏ Bar")
     assert tokens == ["foo", "bar"]
+
+
+def test_default_tokenize_text_handles_combining_marks():
+    tokens = default_tokenize_text("Cafe\u0301")
+    assert tokens == ["café"]
+
+
+def test_default_tokenize_text_handles_zero_width_spacing():
+    tokens = default_tokenize_text("alpha\u200bbeta")
+    assert tokens == ["alpha", "beta"]

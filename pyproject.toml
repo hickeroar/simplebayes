@@ -33,6 +33,11 @@ classifiers = [
 [project.scripts]
 simplebayes-server = "simplebayes.cli:run"
 
+[project.urls]
+Homepage = "https://github.com/hickeroar/simplebayes"
+Repository = "https://github.com/hickeroar/simplebayes"
+Issues = "https://github.com/hickeroar/simplebayes/issues"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v"
@@ -41,7 +46,7 @@ python_functions = ["test_*"]
 
 [tool.coverage.run]
 source = ["simplebayes"]
-branch = false
+branch = true
 
 [tool.coverage.report]
 fail_under = 100

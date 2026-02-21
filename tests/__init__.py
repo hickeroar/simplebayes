@@ -1,8 +1,5 @@
 # pylint: disable=invalid-name,missing-docstring
 import unittest
-import builtins
-import os
-import pickle
 from unittest.mock import patch, MagicMock
 
 from simplebayes import SimpleBayes
@@ -138,6 +135,15 @@ class SimpleBayesTests(unittest.TestCase):
             get_categories_mock.call_count
         cat_mock.get_tally.assert_called_once_with()
 
+    def test_score_without_categories(self):
+        sb = SimpleBayes()
+        self.assertEqual(sb.score('hello world'), {})
+
+    def test_score_with_no_matching_tokens(self):
+        sb = SimpleBayes()
+        sb.train('alpha', 'one two three')
+        self.assertEqual(sb.score('unknown tokens here'), {})
+
     @patch.object(BayesCategories, 'get_categories')
     def test_score(self, get_categories_mock):
         cat1_mock = MagicMock()
@@ -156,13 +162,10 @@ class SimpleBayesTests(unittest.TestCase):
         sb.calculate_category_probability()
         result = sb.score('hello world')
 
-        self.assertEqual(
-            {
-                'foo': 0.22222222222222224,
-                'bar': 1.777777777777778
-            },
-            result
-        )
+        self.assertIn('foo', result)
+        self.assertIn('bar', result)
+        self.assertAlmostEqual(result['foo'], 0.22222222222222224)
+        self.assertAlmostEqual(result['bar'], 1.777777777777778)
 
         assert 3 == get_categories_mock.call_count, \
             get_categories_mock.call_count
@@ -209,111 +212,6 @@ class SimpleBayesTests(unittest.TestCase):
         cat2_mock.get_token_count.assert_any_call('world')
         cat2_mock.get_tally.assert_called_once_with()
 
-    @patch.object(SimpleBayes, 'calculate_category_probability')
-    @patch.object(builtins, 'open')
-    @patch.object(pickle, 'load')
-    @patch.object(os.path, 'exists')
-    def test_cache_train(self, exists_mock, load_mock, open_mock, calc_mock):
-        categories = BayesCategories()
-        categories.categories = {'foo': 'bar'}
-
-        load_mock.return_value = categories
-        file_mock = MagicMock()
-        file_mock.__enter__.return_value = 'opened'
-        file_mock.__exit__.return_value = None
-        open_mock.return_value = file_mock
-        exists_mock.return_value = True
-
-        sb = SimpleBayes(cache_path='foo')
-        sb.cache_train()
-
-        exists_mock.assert_called_once_with('foo/_simplebayes.pickle')
-        open_mock.assert_called_once_with('foo/_simplebayes.pickle', 'rb')
-        load_mock.assert_called_once_with('opened')
-        calc_mock.assert_called_once_with()
-
-        self.assertEqual(sb.categories, categories)
-
-    @patch.object(SimpleBayes, 'calculate_category_probability')
-    @patch.object(builtins, 'open')
-    @patch.object(pickle, 'load')
-    @patch.object(os.path, 'exists')
-    def test_cache_train_with_custom_cache_file(
-            self, exists_mock, load_mock, open_mock, calc_mock):
-        categories = BayesCategories()
-        categories.categories = {'foo': 'bar'}
-
-        load_mock.return_value = categories
-        file_mock = MagicMock()
-        file_mock.__enter__.return_value = 'opened'
-        file_mock.__exit__.return_value = None
-        open_mock.return_value = file_mock
-        exists_mock.return_value = True
-
-        sb = SimpleBayes(cache_path='foo', cache_file='bar.pickle')
-        sb.cache_train()
-
-        exists_mock.assert_called_once_with('foo/bar.pickle')
-        open_mock.assert_called_once_with('foo/bar.pickle', 'rb')
-        load_mock.assert_called_once_with('opened')
-        calc_mock.assert_called_once_with()
-
-        self.assertEqual(sb.categories, categories)
-
-    @patch.object(os.path, 'exists')
-    def test_cache_train_with_no_file(self, exists_mock):
-        exists_mock.return_value = False
-
-        sb = SimpleBayes()
-        result = sb.cache_train()
-
-        exists_mock.assert_called_once_with('/tmp/_simplebayes.pickle')
-        self.assertFalse(result)
-
-    @patch.object(builtins, 'open')
-    @patch.object(pickle, 'dump')
-    def test_cache_persist(self, dump_mock, open_mock):
-        file_mock = MagicMock()
-        file_mock.__enter__.return_value = 'opened'
-        file_mock.__exit__.return_value = None
-        open_mock.return_value = file_mock
-
-        categories = BayesCategories()
-        categories.categories = {'foo': 'bar'}
-
-        sb = SimpleBayes()
-        sb.cache_path = '/tmp/'
-        sb.categories = categories
-        sb.cache_persist()
-
-        open_mock.assert_called_once_with('/tmp/_simplebayes.pickle', 'wb')
-        dump_mock.assert_called_once_with(categories, 'opened')
-
-    @patch.object(builtins, 'open')
-    @patch.object(pickle, 'dump')
-    def test_cache_persist_with_custom_cache_file(self, dump_mock, open_mock):
-        file_mock = MagicMock()
-        file_mock.__enter__.return_value = 'opened'
-        file_mock.__exit__.return_value = None
-        open_mock.return_value = file_mock
-
-        categories = BayesCategories()
-        categories.categories = {'foo': 'bar'}
-
-        sb = SimpleBayes(cache_path='tmp', cache_file='data.pickle')
-        sb.categories = categories
-        sb.cache_persist()
-
-        open_mock.assert_called_once_with('tmp/data.pickle', 'wb')
-        dump_mock.assert_called_once_with(categories, 'opened')
-
-    def test_get_cache_location_multiple_instances(self):
-        sb1 = SimpleBayes(cache_path='tmp', cache_file='a.pickle')
-        sb2 = SimpleBayes(cache_path='tmp', cache_file='b.pickle')
-
-        self.assertEqual(sb1.get_cache_location(), 'tmp/a.pickle')
-        self.assertEqual(sb2.get_cache_location(), 'tmp/b.pickle')
-
     def test_classify_result(self):
         sb = SimpleBayes()
         sb.train('good', 'bright happy joy')
@@ -355,6 +253,8 @@ class SimpleBayesTests(unittest.TestCase):
         sb.train('alpha', 'one two three')
         sb.untrain('alpha', 'one two three')
         self.assertNotIn('alpha', sb.categories.get_categories())
+        self.assertNotIn('alpha', sb.probabilities)
+        self.assertNotIn('alpha', sb.get_summaries())
 
     def test_classify_tie_breaks_lexically(self):
         sb = SimpleBayes()
