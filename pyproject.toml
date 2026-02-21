@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "simplebayes"
-version = "2.1.0"
+version = "3.0.0"
 description = "A memory-based, optional-persistence naïve bayesian text classifier."
 readme = "README.md"
 license = {text = "MIT"}
