@@ -1,13 +1,16 @@
-name: Test
+name: Tests and Quality
 
 on:
   push:
     branches: [master, main]
   pull_request:
     branches: [master, main]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * *"
 
 jobs:
-  test:
+  test-and-coverage:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -27,7 +30,7 @@ jobs:
           pip install -e .
           pip install -r setup/requirements.dev.txt
 
-      - name: Run tests
+      - name: Run tests with strict coverage
         run: pytest tests/ --cov=simplebayes --cov-fail-under=100 -v
 
       - name: Run flake8
@@ -35,3 +38,42 @@ jobs:
 
       - name: Run pylint
         run: pylint simplebayes tests --exit-zero
+
+  api-integration:
+    runs-on: ubuntu-latest
+    needs: test-and-coverage
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install -r setup/requirements.dev.txt
+
+      - name: Run API integration slice
+        run: pytest tests/test_api_endpoints.py -v
+
+  packaging-smoke:
+    runs-on: ubuntu-latest
+    needs: test-and-coverage
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build package artifacts
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+          python -m build
