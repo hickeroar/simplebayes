@@ -1,18 +1,21 @@
+from typing import Dict
+
+
 class BayesCategory:
     """
     Represents a trainable category of content for bayesian classification
     """
 
-    def __init__(self, name):
+    def __init__(self, name: str):
         """
         :param name: The name of the category we're creating
         :type name: str
         """
-        self.name = name
-        self.tokens = {}
-        self.tally = 0
+        self.name: str = name
+        self.tokens: Dict[str, int] = {}
+        self.tally: int = 0
 
-    def train_token(self, word, count):
+    def train_token(self, word: str, count: int) -> None:
         """
         Trains a particular token (increases the weight/count of it)
 
@@ -27,7 +30,7 @@ class BayesCategory:
         self.tokens[word] += count
         self.tally += count
 
-    def untrain_token(self, word, count):
+    def untrain_token(self, word: str, count: int) -> None:
         """
         Untrains a particular token (decreases the weight/count of it)
 
@@ -44,8 +47,10 @@ class BayesCategory:
 
         self.tokens[word] -= count
         self.tally -= count
+        if self.tokens[word] <= 0:
+            del self.tokens[word]
 
-    def get_token_count(self, word):
+    def get_token_count(self, word: str) -> int:
         """
         Gets the count associated with a provided token/word
 
@@ -56,7 +61,7 @@ class BayesCategory:
         """
         return self.tokens.get(word, 0)
 
-    def get_tally(self):
+    def get_tally(self) -> int:
         """
         Gets the tally of all types
 

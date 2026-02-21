@@ -1,13 +1,23 @@
 # coding: utf-8
-__version__ = '2.1.0'
+__version__ = '3.0.0'
 
-import os
-import pickle
+import threading
 from collections import Counter
-from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
 from simplebayes.categories import BayesCategories
+from simplebayes.constants import CATEGORY_PATTERN
+from simplebayes.errors import InvalidCategoryError
+from simplebayes.models import CategorySummary, ClassificationResult
+from simplebayes.persistence import (
+    PERSISTED_MODEL_VERSION,
+    dump_model_state,
+    load_model_state,
+    load_model_state_from_file,
+    save_model_state_to_file,
+    validate_model_state,
+)
+from simplebayes.tokenization import default_tokenize_text
 
 __all__ = ['SimpleBayes']
 
@@ -18,22 +28,15 @@ class SimpleBayes:
     def __init__(
         self,
         tokenizer: Optional[Callable[[str], List[str]]] = None,
-        cache_path: str = '/tmp/',
-        cache_file: str = '_simplebayes.pickle',
     ) -> None:
         """
         :param tokenizer: A tokenizer override
         :type tokenizer: function (optional)
-        :param cache_path: path to data storage
-        :type cache_path: str
-        :param cache_file: cache filename to persist/load
-        :type cache_file: str
         """
         self.categories = BayesCategories()
-        self.tokenizer = tokenizer or SimpleBayes.tokenize_text
-        self.cache_path = cache_path
-        self.cache_file = cache_file
+        self.tokenizer = tokenizer or default_tokenize_text
         self.probabilities = {}
+        self._lock = threading.RLock()
 
     @classmethod
     def tokenize_text(cls, text: str) -> List[str]:
@@ -45,7 +48,7 @@ class SimpleBayes:
         :return: list of tokenized text
         :rtype: list
         """
-        return [w for w in text.split() if len(w) > 2]
+        return default_tokenize_text(text)
 
     @classmethod
     def count_token_occurrences(cls, words: List[str]) -> Dict[str, int]:
@@ -63,34 +66,39 @@ class SimpleBayes:
         """
         Deletes all tokens & categories
         """
-        self.categories = BayesCategories()
+        with self._lock:
+            self.categories = BayesCategories()
+            self.probabilities = {}
 
     def calculate_category_probability(self) -> None:
         """
         Caches the individual probabilities for each category
         """
-        total_tally = 0.0
-        probs = {}
-        for category, bayes_category in \
-                self.categories.get_categories().items():
-            count = bayes_category.get_tally()
-            total_tally += count
-            probs[category] = count
+        with self._lock:
+            total_tally = 0.0
+            probs = {}
+            for category, bayes_category in \
+                    self.categories.get_categories().items():
+                count = bayes_category.get_tally()
+                total_tally += count
+                probs[category] = count
 
-        # Calculating the probability
-        for category, count in probs.items():
-            if total_tally > 0:
-                probs[category] = float(count)/float(total_tally)
-            else:
-                probs[category] = 0.0
+            # Calculating the probability
+            for category, count in probs.items():
+                if total_tally > 0:
+                    probs[category] = float(count)/float(total_tally)
+                else:
+                    probs[category] = 0.0
 
-        for category, probability in probs.items():
-            self.probabilities[category] = {
-                # Probability that any given token is of this category
-                'prc': probability,
-                # Probability that any given token is not of this category
-                'prnc': sum(probs.values()) - probability
-            }
+            new_probabilities = {}
+            for category, probability in probs.items():
+                new_probabilities[category] = {
+                    # Probability that any given token is of this category
+                    'prc': probability,
+                    # Probability that any given token is not of this category
+                    'prnc': 1.0 - probability
+                }
+            self.probabilities = new_probabilities
 
     def train(self, category: str, text: str) -> None:
         """
@@ -101,19 +109,21 @@ class SimpleBayes:
         :param text: the text we want to train the category with
         :type text: str
         """
-        try:
-            bayes_category = self.categories.get_category(category)
-        except KeyError:
-            bayes_category = self.categories.add_category(category)
+        category = self.normalize_category(category)
+        with self._lock:
+            try:
+                bayes_category = self.categories.get_category(category)
+            except KeyError:
+                bayes_category = self.categories.add_category(category)
 
-        tokens = self.tokenizer(str(text))
-        occurrence_counts = self.count_token_occurrences(tokens)
+            tokens = self.tokenizer(str(text))
+            occurrence_counts = self.count_token_occurrences(tokens)
 
-        for word, count in occurrence_counts.items():
-            bayes_category.train_token(word, count)
+            for word, count in occurrence_counts.items():
+                bayes_category.train_token(word, count)
 
-        # Updating our per-category overall probabilities
-        self.calculate_category_probability()
+            # Updating our per-category overall probabilities
+            self.calculate_category_probability()
 
     def untrain(self, category: str, text: str) -> None:
         """
@@ -124,19 +134,24 @@ class SimpleBayes:
         :param text: the text we want to untrain the category with
         :type text: str
         """
-        try:
-            bayes_category = self.categories.get_category(category)
-        except KeyError:
-            return
+        category = self.normalize_category(category)
+        with self._lock:
+            try:
+                bayes_category = self.categories.get_category(category)
+            except KeyError:
+                return
 
-        tokens = self.tokenizer(str(text))
-        occurrence_counts = self.count_token_occurrences(tokens)
+            tokens = self.tokenizer(str(text))
+            occurrence_counts = self.count_token_occurrences(tokens)
 
-        for word, count in occurrence_counts.items():
-            bayes_category.untrain_token(word, count)
+            for word, count in occurrence_counts.items():
+                bayes_category.untrain_token(word, count)
 
-        # Updating our per-category overall probabilities
-        self.calculate_category_probability()
+            if bayes_category.get_tally() == 0:
+                self.categories.delete_category(category)
+
+            # Updating our per-category overall probabilities
+            self.calculate_category_probability()
 
     def classify(self, text: str) -> Optional[str]:
         """
@@ -147,10 +162,34 @@ class SimpleBayes:
         :return: the "winning" category
         :rtype: str
         """
-        score = self.score(text)
-        if not score:
-            return None
-        return sorted(score.items(), key=lambda v: v[1])[-1][0]
+        with self._lock:
+            score = self.score(text)
+            highest_category, _ = self._find_highest_category(score)
+            return highest_category
+
+    def classify_result(self, text: str) -> ClassificationResult:
+        """
+        Returns structured classification output including score.
+        """
+        with self._lock:
+            scores = self.score(text)
+            highest_category, highest_score = self._find_highest_category(scores)
+            return ClassificationResult(category=highest_category or None, score=highest_score)
+
+    @classmethod
+    def _find_highest_category(cls, scores: Dict[str, float]) -> tuple[Optional[str], float]:
+        if not scores:
+            return None, 0.0
+
+        highest_category = None
+        highest_score = 0.0
+        for category in sorted(scores.keys()):
+            category_score = float(scores[category])
+            if category_score > highest_score:
+                highest_score = category_score
+                highest_category = category
+
+        return highest_category, highest_score
 
     def score(self, text: str) -> Dict[str, float]:
         """
@@ -161,46 +200,47 @@ class SimpleBayes:
         :return: dict of scores per category
         :rtype: dict
         """
-        occurs = self.count_token_occurrences(self.tokenizer(text))
-        scores = {}
-        for category in self.categories.get_categories().keys():
-            scores[category] = 0
+        with self._lock:
+            occurs = self.count_token_occurrences(self.tokenizer(text))
+            scores = {}
+            for category in self.categories.get_categories():
+                scores[category] = 0
 
-        categories = self.categories.get_categories().items()
+            categories = self.categories.get_categories().items()
 
-        for word, count in occurs.items():
-            token_scores = {}
+            for word, count in occurs.items():
+                token_scores = {}
 
-            # Adding up individual token scores
-            for category, bayes_category in categories:
-                token_scores[category] = \
-                    float(bayes_category.get_token_count(word))
+                # Adding up individual token scores
+                for category, bayes_category in categories:
+                    token_scores[category] = \
+                        float(bayes_category.get_token_count(word))
 
-            # We use this to get token-in-category probabilities
-            token_tally = sum(token_scores.values())
+                # We use this to get token-in-category probabilities
+                token_tally = sum(token_scores.values())
 
-            # If this token isn't found anywhere its probability is 0
-            if token_tally == 0.0:
-                continue
+                # If this token isn't found anywhere its probability is 0
+                if token_tally == 0.0:
+                    continue
 
-            # Calculating bayes probability for this token
-            # http://en.wikipedia.org/wiki/Naive_Bayes_spam_filtering
-            for category, token_score in token_scores.items():
-                # Bayes probability * the number of occurrences of this token
-                scores[category] += count * \
-                    self.calculate_bayesian_probability(
-                        category,
-                        token_score,
-                        token_tally
-                    )
+                # Calculating bayes probability for this token
+                # http://en.wikipedia.org/wiki/Naive_Bayes_spam_filtering
+                for category, token_score in token_scores.items():
+                    # Bayes probability * the number of occurrences of this token
+                    scores[category] += count * \
+                        self.calculate_bayesian_probability(
+                            category,
+                            token_score,
+                            token_tally
+                        )
 
-        # Removing empty categories from the results
-        final_scores = {}
-        for category, score in scores.items():
-            if score > 0:
-                final_scores[category] = score
+            # Removing empty categories from the results
+            final_scores = {}
+            for category, score in scores.items():
+                if score > 0:
+                    final_scores[category] = score
 
-        return final_scores
+            return final_scores
 
     def calculate_bayesian_probability(
         self, cat: str, token_score: float, token_tally: float
@@ -227,8 +267,8 @@ class SimpleBayes:
         prtc = token_score / token_tally
 
         # Assembling the parts of the bayes equation
-        numerator = (prtc * prc)
-        denominator = (numerator + (prtnc * prnc))
+        numerator = prtc * prc
+        denominator = numerator + (prtnc * prnc)
 
         # Returning the calculated bayes probability unless the denom. is 0
         return numerator / denominator if denominator != 0.0 else 0.0
@@ -242,52 +282,107 @@ class SimpleBayes:
         :return: tally for a given category
         :rtype: int
         """
-        try:
-            bayes_category = self.categories.get_category(category)
-        except KeyError:
-            return 0
+        with self._lock:
+            try:
+                bayes_category = self.categories.get_category(category)
+            except KeyError:
+                return 0
 
-        return bayes_category.get_tally()
+            return bayes_category.get_tally()
 
-    def get_cache_location(self) -> str:
+    def get_summaries(self) -> Dict[str, CategorySummary]:
         """
-        Gets the location of the cache file
-
-        :return: the location of the cache file
-        :rtype: string
+        Returns per-category summary details.
         """
-        return str(Path(self.cache_path) / self.cache_file)
+        with self._lock:
+            summaries: Dict[str, CategorySummary] = {}
+            categories = self.categories.get_categories()
 
-    def cache_persist(self) -> None:
+            for category_name, category in categories.items():
+                category_probability = self.probabilities.get(
+                    category_name,
+                    {'prc': 0.0, 'prnc': 0.0},
+                )
+                summaries[category_name] = CategorySummary(
+                    token_tally=category.get_tally(),
+                    prob_in_cat=float(category_probability['prc']),
+                    prob_not_in_cat=float(category_probability['prnc']),
+                )
+
+            return summaries
+
+    def save(self, destination) -> None:
         """
-        Saves the current trained data to the cache.
-        This is initiated by the program using this module
+        Saves classifier state to a text stream.
         """
-        filename = self.get_cache_location()
-        with open(filename, 'wb') as cache_file:
-            pickle.dump(self.categories, cache_file)
+        with self._lock:
+            dump_model_state(destination, self._export_model_state())
 
-    def cache_train(self) -> bool:
+    def load(self, source) -> None:
         """
-        Loads the data for this classifier from a cache file
-
-        :return: whether or not we were successful
-        :rtype: bool
+        Loads classifier state from a text stream.
         """
-        filename = self.get_cache_location()
+        with self._lock:
+            state = load_model_state(source)
+            validate_model_state(state)
+            self._apply_model_state(state)
 
-        if not os.path.exists(filename):
-            return False
+    def save_to_file(self, absolute_path: str = "") -> None:
+        """
+        Saves classifier state to file using atomic replacement.
+        """
+        with self._lock:
+            save_model_state_to_file(absolute_path, self._export_model_state())
 
-        with open(filename, 'rb') as cache_file:
-            categories = pickle.load(cache_file)
+    def load_from_file(self, absolute_path: str = "") -> None:
+        """
+        Loads classifier state from a persisted model file.
+        """
+        with self._lock:
+            state = load_model_state_from_file(absolute_path)
+            validate_model_state(state)
+            self._apply_model_state(state)
 
-        assert isinstance(categories, BayesCategories), \
-            "Cache data is either corrupt or invalid"
+    @classmethod
+    def normalize_category(cls, category: str | None) -> str:
+        """
+        Validates and normalizes category input.
+        """
+        if category is None:
+            raise InvalidCategoryError("category is required")
 
-        self.categories = categories
+        normalized = str(category).strip()
+        if not CATEGORY_PATTERN.match(normalized):
+            raise InvalidCategoryError(
+                "category must be 1-64 chars and only include letters, numbers, underscore, or hyphen",
+            )
 
-        # Updating our per-category overall probabilities
+        return normalized
+
+    def _export_model_state(self) -> Dict:
+        categories = {}
+        for category_name, category in self.categories.get_categories().items():
+            category_tokens = {
+                token: int(count)
+                for token, count in category.tokens.items()
+                if count > 0
+            }
+            categories[category_name] = {
+                "tally": int(category.get_tally()),
+                "tokens": category_tokens,
+            }
+
+        return {
+            "version": PERSISTED_MODEL_VERSION,
+            "categories": categories,
+        }
+
+    def _apply_model_state(self, state: Dict) -> None:
+        self.categories = BayesCategories()
+        categories = state.get("categories", {})
+        for category_name, category_state in categories.items():
+            category = self.categories.add_category(category_name)
+            for token, count in category_state["tokens"].items():
+                category.train_token(token, count)
+
         self.calculate_category_probability()
-
-        return True

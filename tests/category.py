@@ -1,4 +1,4 @@
-# pylint: disable=invalid-name,missing-docstring,no-self-use
+# pylint: disable=invalid-name,missing-docstring
 from simplebayes.category import BayesCategory
 import unittest
 
@@ -27,7 +27,7 @@ class BayesCategoryTests(unittest.TestCase):
         bc.untrain_token('baz', 5)
         self.assertEqual(2, bc.tally)
         self.assertEqual(bc.tokens['foo'], 2)
-        self.assertEqual(bc.tokens['bar'], 0)
+        self.assertNotIn('bar', bc.tokens)
 
     def test_get_token_count(self):
         bc = BayesCategory('foo')

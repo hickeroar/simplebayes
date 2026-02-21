@@ -1,11 +1,11 @@
-# pylint: disable=invalid-name,missing-docstring,no-self-use
-from simplebayes import SimpleBayes
-from simplebayes.categories import BayesCategories
+# pylint: disable=invalid-name,missing-docstring
 import unittest
 from unittest.mock import patch, MagicMock
-import builtins
-import os
-import pickle
+
+from simplebayes import SimpleBayes
+from simplebayes.categories import BayesCategories
+
+from simplebayes.errors import InvalidCategoryError
 
 
 class SimpleBayesTests(unittest.TestCase):
@@ -14,6 +14,7 @@ class SimpleBayesTests(unittest.TestCase):
         sb = SimpleBayes()
         result = sb.tokenizer('hello world')
         self.assertEqual(result, ['hello', 'world'])
+        self.assertEqual(SimpleBayes.tokenize_text('hello world'), ['hello', 'world'])
 
     def test_count_token_occurrences(self):
         sb = SimpleBayes()
@@ -45,7 +46,6 @@ class SimpleBayesTests(unittest.TestCase):
         self.assertEqual(sb.tally('foo'), 1)
 
     @patch.object(BayesCategories, 'get_category')
-    # pylint: disable=no-self-use
     def test_train_with_existing_category(self, get_category_mock):
         cat_mock = MagicMock()
         cat_mock.train_token.return_value = None
@@ -60,7 +60,6 @@ class SimpleBayesTests(unittest.TestCase):
 
     @patch.object(BayesCategories, 'get_category')
     @patch.object(BayesCategories, 'add_category')
-    # pylint: disable=no-self-use
     def test_train_with_new_category(
             self,
             add_category_mock,
@@ -136,6 +135,15 @@ class SimpleBayesTests(unittest.TestCase):
             get_categories_mock.call_count
         cat_mock.get_tally.assert_called_once_with()
 
+    def test_score_without_categories(self):
+        sb = SimpleBayes()
+        self.assertEqual(sb.score('hello world'), {})
+
+    def test_score_with_no_matching_tokens(self):
+        sb = SimpleBayes()
+        sb.train('alpha', 'one two three')
+        self.assertEqual(sb.score('unknown tokens here'), {})
+
     @patch.object(BayesCategories, 'get_categories')
     def test_score(self, get_categories_mock):
         cat1_mock = MagicMock()
@@ -154,13 +162,10 @@ class SimpleBayesTests(unittest.TestCase):
         sb.calculate_category_probability()
         result = sb.score('hello world')
 
-        self.assertEqual(
-            {
-                'foo': 0.22222222222222224,
-                'bar': 1.777777777777778
-            },
-            result
-        )
+        self.assertIn('foo', result)
+        self.assertIn('bar', result)
+        self.assertAlmostEqual(result['foo'], 0.22222222222222224)
+        self.assertAlmostEqual(result['bar'], 1.777777777777778)
 
         assert 3 == get_categories_mock.call_count, \
             get_categories_mock.call_count
@@ -207,107 +212,55 @@ class SimpleBayesTests(unittest.TestCase):
         cat2_mock.get_token_count.assert_any_call('world')
         cat2_mock.get_tally.assert_called_once_with()
 
-    @patch.object(SimpleBayes, 'calculate_category_probability')
-    @patch.object(builtins, 'open')
-    @patch.object(pickle, 'load')
-    @patch.object(os.path, 'exists')
-    def test_cache_train(self, exists_mock, load_mock, open_mock, calc_mock):
-        categories = BayesCategories()
-        categories.categories = {'foo': 'bar'}
-
-        load_mock.return_value = categories
-        file_mock = MagicMock()
-        file_mock.__enter__.return_value = 'opened'
-        file_mock.__exit__.return_value = None
-        open_mock.return_value = file_mock
-        exists_mock.return_value = True
-
-        sb = SimpleBayes(cache_path='foo')
-        sb.cache_train()
-
-        exists_mock.assert_called_once_with('foo/_simplebayes.pickle')
-        open_mock.assert_called_once_with('foo/_simplebayes.pickle', 'rb')
-        load_mock.assert_called_once_with('opened')
-        calc_mock.assert_called_once_with()
-
-        self.assertEqual(sb.categories, categories)
-
-    @patch.object(SimpleBayes, 'calculate_category_probability')
-    @patch.object(builtins, 'open')
-    @patch.object(pickle, 'load')
-    @patch.object(os.path, 'exists')
-    def test_cache_train_with_custom_cache_file(
-            self, exists_mock, load_mock, open_mock, calc_mock):
-        categories = BayesCategories()
-        categories.categories = {'foo': 'bar'}
-
-        load_mock.return_value = categories
-        file_mock = MagicMock()
-        file_mock.__enter__.return_value = 'opened'
-        file_mock.__exit__.return_value = None
-        open_mock.return_value = file_mock
-        exists_mock.return_value = True
-
-        sb = SimpleBayes(cache_path='foo', cache_file='bar.pickle')
-        sb.cache_train()
-
-        exists_mock.assert_called_once_with('foo/bar.pickle')
-        open_mock.assert_called_once_with('foo/bar.pickle', 'rb')
-        load_mock.assert_called_once_with('opened')
-        calc_mock.assert_called_once_with()
-
-        self.assertEqual(sb.categories, categories)
-
-    @patch.object(os.path, 'exists')
-    def test_cache_train_with_no_file(self, exists_mock):
-        exists_mock.return_value = False
-
+    def test_classify_result(self):
         sb = SimpleBayes()
-        result = sb.cache_train()
+        sb.train('good', 'bright happy joy')
+        sb.train('bad', 'sad dark doom')
 
-        exists_mock.assert_called_once_with('/tmp/_simplebayes.pickle')
-        self.assertFalse(result)
+        result = sb.classify_result('bright joy')
 
-    @patch.object(builtins, 'open')
-    @patch.object(pickle, 'dump')
-    def test_cache_persist(self, dump_mock, open_mock):
-        file_mock = MagicMock()
-        file_mock.__enter__.return_value = 'opened'
-        file_mock.__exit__.return_value = None
-        open_mock.return_value = file_mock
+        self.assertEqual(result.category, 'good')
+        self.assertGreater(result.score, 0)
 
-        categories = BayesCategories()
-        categories.categories = {'foo': 'bar'}
-
+    def test_classify_result_empty(self):
         sb = SimpleBayes()
-        sb.cache_path = '/tmp/'
-        sb.categories = categories
-        sb.cache_persist()
 
-        open_mock.assert_called_once_with('/tmp/_simplebayes.pickle', 'wb')
-        dump_mock.assert_called_once_with(categories, 'opened')
+        result = sb.classify_result('anything')
 
-    @patch.object(builtins, 'open')
-    @patch.object(pickle, 'dump')
-    def test_cache_persist_with_custom_cache_file(self, dump_mock, open_mock):
-        file_mock = MagicMock()
-        file_mock.__enter__.return_value = 'opened'
-        file_mock.__exit__.return_value = None
-        open_mock.return_value = file_mock
+        self.assertIsNone(result.category)
+        self.assertEqual(result.score, 0.0)
 
-        categories = BayesCategories()
-        categories.categories = {'foo': 'bar'}
+    def test_get_summaries(self):
+        sb = SimpleBayes()
+        sb.train('alpha', 'one two three')
 
-        sb = SimpleBayes(cache_path='tmp', cache_file='data.pickle')
-        sb.categories = categories
-        sb.cache_persist()
+        summaries = sb.get_summaries()
 
-        open_mock.assert_called_once_with('tmp/data.pickle', 'wb')
-        dump_mock.assert_called_once_with(categories, 'opened')
+        self.assertIn('alpha', summaries)
+        self.assertEqual(summaries['alpha'].token_tally, 3)
+        self.assertGreaterEqual(summaries['alpha'].prob_in_cat, 0.0)
+        self.assertGreaterEqual(summaries['alpha'].prob_not_in_cat, 0.0)
 
-    def test_get_cache_location_multiple_instances(self):
-        sb1 = SimpleBayes(cache_path='tmp', cache_file='a.pickle')
-        sb2 = SimpleBayes(cache_path='tmp', cache_file='b.pickle')
+    def test_train_invalid_category_raises(self):
+        sb = SimpleBayes()
+        with self.assertRaises(InvalidCategoryError):
+            sb.train('bad category', 'text')
+        with self.assertRaises(InvalidCategoryError):
+            sb.train(None, 'text')  # type: ignore[arg-type]
 
-        self.assertEqual(sb1.get_cache_location(), 'tmp/a.pickle')
-        self.assertEqual(sb2.get_cache_location(), 'tmp/b.pickle')
+    def test_untrain_removes_empty_category(self):
+        sb = SimpleBayes()
+        sb.train('alpha', 'one two three')
+        sb.untrain('alpha', 'one two three')
+        self.assertNotIn('alpha', sb.categories.get_categories())
+        self.assertNotIn('alpha', sb.probabilities)
+        self.assertNotIn('alpha', sb.get_summaries())
+
+    def test_classify_tie_breaks_lexically(self):
+        sb = SimpleBayes()
+        sb.train('zeta', 'match token')
+        sb.train('alpha', 'match token')
+
+        result = sb.classify('match token')
+
+        self.assertEqual(result, 'alpha')
