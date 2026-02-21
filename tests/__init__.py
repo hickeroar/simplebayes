@@ -15,6 +15,7 @@ class SimpleBayesTests(unittest.TestCase):
         sb = SimpleBayes()
         result = sb.tokenizer('hello world')
         self.assertEqual(result, ['hello', 'world'])
+        self.assertEqual(SimpleBayes.tokenize_text('hello world'), ['hello', 'world'])
 
     def test_count_token_occurrences(self):
         sb = SimpleBayes()

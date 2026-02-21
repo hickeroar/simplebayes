@@ -11,6 +11,7 @@ from typing import Callable, Dict, List, Optional
 from simplebayes.categories import BayesCategories
 from simplebayes.errors import InvalidCategoryError
 from simplebayes.models import CategorySummary, ClassificationResult
+from simplebayes.tokenization import default_tokenize_text
 
 __all__ = ['SimpleBayes']
 
@@ -35,7 +36,7 @@ class SimpleBayes:
         :type cache_file: str
         """
         self.categories = BayesCategories()
-        self.tokenizer = tokenizer or SimpleBayes.tokenize_text
+        self.tokenizer = tokenizer or default_tokenize_text
         self.cache_path = cache_path
         self.cache_file = cache_file
         self.probabilities = {}
@@ -50,7 +51,7 @@ class SimpleBayes:
         :return: list of tokenized text
         :rtype: list
         """
-        return [w for w in text.split() if len(w) > 2]
+        return default_tokenize_text(text)
 
     @classmethod
     def count_token_occurrences(cls, words: List[str]) -> Dict[str, int]:

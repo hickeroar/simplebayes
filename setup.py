@@ -28,6 +28,7 @@ setup(
         'Topic :: Utilities',
     ],
     python_requires='>=3.8',
+    install_requires=['snowballstemmer>=3.0.1'],
     packages=['simplebayes'],
     package_data={'simplebayes': ['py.typed']},
 )
