@@ -12,6 +12,14 @@ from typing import Callable, Dict, List, Optional
 from simplebayes.categories import BayesCategories
 from simplebayes.errors import InvalidCategoryError
 from simplebayes.models import CategorySummary, ClassificationResult
+from simplebayes.persistence import (
+    PERSISTED_MODEL_VERSION,
+    dump_model_state,
+    load_model_state,
+    load_model_state_from_file,
+    save_model_state_to_file,
+    validate_model_state,
+)
 from simplebayes.tokenization import default_tokenize_text
 
 __all__ = ['SimpleBayes']
@@ -364,6 +372,38 @@ class SimpleBayes:
 
             return True
 
+    def save(self, destination) -> None:
+        """
+        Saves classifier state to a text stream.
+        """
+        with self._lock:
+            dump_model_state(destination, self._export_model_state())
+
+    def load(self, source) -> None:
+        """
+        Loads classifier state from a text stream.
+        """
+        with self._lock:
+            state = load_model_state(source)
+            validate_model_state(state)
+            self._apply_model_state(state)
+
+    def save_to_file(self, absolute_path: str = "") -> None:
+        """
+        Saves classifier state to file using atomic replacement.
+        """
+        with self._lock:
+            save_model_state_to_file(absolute_path, self._export_model_state())
+
+    def load_from_file(self, absolute_path: str = "") -> None:
+        """
+        Loads classifier state from a persisted model file.
+        """
+        with self._lock:
+            state = load_model_state_from_file(absolute_path)
+            validate_model_state(state)
+            self._apply_model_state(state)
+
     @classmethod
     def normalize_category(cls, category: str) -> str:
         """
@@ -379,3 +419,31 @@ class SimpleBayes:
             )
 
         return normalized
+
+    def _export_model_state(self) -> Dict:
+        categories = {}
+        for category_name, category in self.categories.get_categories().items():
+            category_tokens = {
+                token: int(count)
+                for token, count in category.tokens.items()
+                if count > 0
+            }
+            categories[category_name] = {
+                "tally": int(category.get_tally()),
+                "tokens": category_tokens,
+            }
+
+        return {
+            "version": PERSISTED_MODEL_VERSION,
+            "categories": categories,
+        }
+
+    def _apply_model_state(self, state: Dict) -> None:
+        self.categories = BayesCategories()
+        categories = state.get("categories", {})
+        for category_name, category_state in categories.items():
+            category = self.categories.add_category(category_name)
+            for token, count in category_state["tokens"].items():
+                category.train_token(token, count)
+
+        self.calculate_category_probability()
