@@ -9,6 +9,7 @@ import pickle
 
 from simplebayes.errors import InvalidCategoryError
 
+
 class SimpleBayesTests(unittest.TestCase):
 
     def test_tokenizer(self):
