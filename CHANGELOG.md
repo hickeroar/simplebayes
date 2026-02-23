@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented here.
 
+## v3.1.1
+
+### Changed
+- Documentation and metadata: updated terminology from "Bayes" to "Bayesian" in PyPI keywords and changelog for consistency with proper nomenclature.
+
 ## v3.1.0
 
 ### Added
@@ -124,6 +129,6 @@ All notable changes to this project are documented here.
 - Full test coverage wiring and early build checks.
 
 ### Changed
-- Bayes scoring approach rewrite and performance optimizations.
+- Bayesian scoring approach rewrite and performance optimizations.
 - Python 2/3 compatibility updates during early lifecycle.
 - Documentation, README, and homepage iterations.
