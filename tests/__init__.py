@@ -264,3 +264,16 @@ class SimpleBayesTests(unittest.TestCase):
         result = sb.classify('match token')
 
         self.assertEqual(result, 'alpha')
+
+    def test_laplace_smoothing_alpha(self):
+        sb = SimpleBayes(alpha=0.01)
+        sb.train('spam', 'buy now click here')
+        sb.train('ham', 'meeting tomorrow schedule')
+        result = sb.classify_result('click offer')
+        self.assertIsNotNone(result.category)
+        self.assertGreater(result.score, 0)
+
+    def test_language_and_remove_stop_words_params(self):
+        sb = SimpleBayes(language="english", remove_stop_words=False)
+        sb.train("foo", "the cat is in the hat")
+        self.assertGreater(sb.tally("foo"), 2)  # stop words counted

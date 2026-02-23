@@ -15,5 +15,5 @@ flake8 simplebayes tests
 echo
 echo " [simplebayes] Step 3: Executing pylint"
 echo
-pylint simplebayes tests --exit-zero
+pylint simplebayes tests --fail-under=10
 echo

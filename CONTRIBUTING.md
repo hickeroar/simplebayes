@@ -7,7 +7,7 @@ Run these before opening a PR:
 ```sh
 ./.venv/bin/pytest tests/ --cov=simplebayes --cov-fail-under=100 -v
 ./.venv/bin/flake8 simplebayes tests
-./.venv/bin/pylint simplebayes tests --exit-zero
+./.venv/bin/pylint simplebayes tests --fail-under=10
 ```
 
 Optional but recommended:

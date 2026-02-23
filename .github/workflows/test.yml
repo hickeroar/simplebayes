@@ -37,7 +37,7 @@ jobs:
         run: flake8 simplebayes tests
 
       - name: Run pylint
-        run: pylint simplebayes tests --exit-zero
+        run: pylint simplebayes tests --fail-under=10
 
   api-integration:
     runs-on: ubuntu-latest

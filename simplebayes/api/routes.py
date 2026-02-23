@@ -1,20 +1,33 @@
 import secrets
 from typing import Dict
 
-from fastapi import APIRouter, Body, Path, Request
+from fastapi import APIRouter, Body, Depends, Path, Request
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from simplebayes import SimpleBayes
+from simplebayes.errors import UnauthorizedError
+from simplebayes.runtime.readiness import ReadinessState
 from simplebayes.api.schemas import (
     CategorySummaryResponse,
     ClassificationResponse,
     InfoResponse,
     MutationResponse,
 )
-from simplebayes.runtime.readiness import ReadinessState
 
 CATEGORY_REGEX = r"^[-_A-Za-z0-9]{1,64}$"
+
+
+def _get_classifier(request: Request) -> SimpleBayes:
+    return request.app.state.classifier
+
+
+def _get_readiness(request: Request) -> ReadinessState:
+    return request.app.state.readiness
+
+
 MAX_REQUEST_BODY_BYTES = 1024 * 1024
+WWW_AUTH_HEADER = {"WWW-Authenticate": 'Bearer realm="simplebayes"'}
 
 
 def _map_summaries(classifier: SimpleBayes) -> Dict[str, CategorySummaryResponse]:
@@ -29,27 +42,21 @@ def _map_summaries(classifier: SimpleBayes) -> Dict[str, CategorySummaryResponse
     }
 
 
-def _authorize(request: Request, auth_token: str) -> JSONResponse | None:
-    if not auth_token:
-        return None
+def _create_auth_dependency(auth_token: str):
+    """Returns a FastAPI dependency for Bearer auth. When auth_token is empty, no auth."""
+    bearer = HTTPBearer(auto_error=False)
 
-    auth_header = request.headers.get("Authorization", "")
-    scheme, separator, token = auth_header.partition(" ")
-    if not separator or scheme.lower() != "bearer" or not token:
-        return JSONResponse(
-            status_code=401,
-            content={"error": "unauthorized"},
-            headers={"WWW-Authenticate": 'Bearer realm="simplebayes"'},
-        )
+    def verify(
+        credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
+    ) -> None:
+        if not auth_token:
+            return
+        if credentials is None:
+            raise UnauthorizedError()
+        if not secrets.compare_digest(credentials.credentials, auth_token):
+            raise UnauthorizedError()
 
-    if not secrets.compare_digest(token, auth_token):
-        return JSONResponse(
-            status_code=401,
-            content={"error": "unauthorized"},
-            headers={"WWW-Authenticate": 'Bearer realm="simplebayes"'},
-        )
-
-    return None
+    return verify
 
 
 def _parse_payload(payload: bytes) -> tuple[str, JSONResponse | None]:
@@ -68,30 +75,24 @@ def _parse_payload(payload: bytes) -> tuple[str, JSONResponse | None]:
         )
 
 
-def create_router(
-    classifier: SimpleBayes,
-    readiness: ReadinessState,
-    auth_token: str = "",
-) -> APIRouter:
+def create_router(auth_token: str = "") -> APIRouter:
     router = APIRouter()
+    verify_auth = _create_auth_dependency(auth_token)
 
     @router.get("/info", response_model=InfoResponse)
-    def info(request: Request):
-        auth_response = _authorize(request, auth_token)
-        if auth_response is not None:
-            return auth_response
+    def info(
+        _auth: None = Depends(verify_auth),
+        classifier: SimpleBayes = Depends(_get_classifier),
+    ):
         return InfoResponse(categories=_map_summaries(classifier))
 
     @router.post("/train/{category}", response_model=MutationResponse)
     def train(
-        request: Request,
+        _auth: None = Depends(verify_auth),
+        classifier: SimpleBayes = Depends(_get_classifier),
         category: str = Path(..., pattern=CATEGORY_REGEX),
         payload: bytes = Body(b"", media_type="text/plain"),
     ):
-        auth_response = _authorize(request, auth_token)
-        if auth_response is not None:
-            return auth_response
-
         text, payload_response = _parse_payload(payload)
         if payload_response is not None:
             return payload_response
@@ -101,14 +102,11 @@ def create_router(
 
     @router.post("/untrain/{category}", response_model=MutationResponse)
     def untrain(
-        request: Request,
+        _auth: None = Depends(verify_auth),
+        classifier: SimpleBayes = Depends(_get_classifier),
         category: str = Path(..., pattern=CATEGORY_REGEX),
         payload: bytes = Body(b"", media_type="text/plain"),
     ):
-        auth_response = _authorize(request, auth_token)
-        if auth_response is not None:
-            return auth_response
-
         text, payload_response = _parse_payload(payload)
         if payload_response is not None:
             return payload_response
@@ -117,11 +115,11 @@ def create_router(
         return MutationResponse(success=True, categories=_map_summaries(classifier))
 
     @router.post("/classify", response_model=ClassificationResponse)
-    def classify(request: Request, payload: bytes = Body(b"", media_type="text/plain")):
-        auth_response = _authorize(request, auth_token)
-        if auth_response is not None:
-            return auth_response
-
+    def classify(
+        _auth: None = Depends(verify_auth),
+        classifier: SimpleBayes = Depends(_get_classifier),
+        payload: bytes = Body(b"", media_type="text/plain"),
+    ):
         text, payload_response = _parse_payload(payload)
         if payload_response is not None:
             return payload_response
@@ -130,11 +128,11 @@ def create_router(
         return ClassificationResponse(category=result.category, score=result.score)
 
     @router.post("/score")
-    def score(request: Request, payload: bytes = Body(b"", media_type="text/plain")):
-        auth_response = _authorize(request, auth_token)
-        if auth_response is not None:
-            return auth_response
-
+    def score(
+        _auth: None = Depends(verify_auth),
+        classifier: SimpleBayes = Depends(_get_classifier),
+        payload: bytes = Body(b"", media_type="text/plain"),
+    ):
         text, payload_response = _parse_payload(payload)
         if payload_response is not None:
             return payload_response
@@ -142,11 +140,11 @@ def create_router(
         return classifier.score(text)
 
     @router.post("/flush", response_model=MutationResponse)
-    def flush(request: Request, payload: bytes = Body(b"", media_type="text/plain")):
-        auth_response = _authorize(request, auth_token)
-        if auth_response is not None:
-            return auth_response
-
+    def flush(
+        _auth: None = Depends(verify_auth),
+        classifier: SimpleBayes = Depends(_get_classifier),
+        payload: bytes = Body(b"", media_type="text/plain"),
+    ):
         _, payload_response = _parse_payload(payload)
         if payload_response is not None:
             return payload_response
@@ -159,7 +157,7 @@ def create_router(
         return {"status": "ok"}
 
     @router.get("/readyz")
-    def readyz():
+    def readyz(readiness: ReadinessState = Depends(_get_readiness)):
         if readiness.is_ready:
             return {"status": "ready"}
         return JSONResponse(status_code=503, content={"status": "not ready"})
