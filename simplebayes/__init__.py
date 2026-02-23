@@ -1,5 +1,5 @@
 # coding: utf-8
-__version__ = '3.0.0'
+__version__ = '3.1.0'
 
 import threading
 from collections import Counter
@@ -17,7 +17,7 @@ from simplebayes.persistence import (
     save_model_state_to_file,
     validate_model_state,
 )
-from simplebayes.tokenization import default_tokenize_text
+from simplebayes.tokenization import create_tokenizer, default_tokenize_text
 
 __all__ = ['SimpleBayes']
 
@@ -28,13 +28,25 @@ class SimpleBayes:
     def __init__(
         self,
         tokenizer: Optional[Callable[[str], List[str]]] = None,
+        alpha: float = 0.0,
+        language: str = "english",
+        remove_stop_words: bool = False,
     ) -> None:
         """
-        :param tokenizer: A tokenizer override
-        :type tokenizer: function (optional)
+        :param tokenizer: A tokenizer override. When None, uses built-in tokenizer.
+        :param alpha: Laplace smoothing parameter. Use > 0 (e.g. 0.01 or 1.0) to avoid
+            zero probabilities for tokens unseen in a category. Default 0 preserves
+            prior behavior.
+        :param language: Language code for stemmer and stop words (e.g. "english",
+            "spanish"). Default "english".
+        :param remove_stop_words: If True, filter stop words. Default False (backwards compatible).
         """
         self.categories = BayesCategories()
-        self.tokenizer = tokenizer or default_tokenize_text
+        self.tokenizer = (
+            tokenizer
+            or create_tokenizer(language=language, remove_stop_words=remove_stop_words)
+        )
+        self.alpha = alpha
         self.probabilities = {}
         self._lock = threading.RLock()
 
@@ -261,10 +273,16 @@ class SimpleBayes:
         prc = self.probabilities[cat]['prc']
         # P that any given token is NOT in this category
         prnc = self.probabilities[cat]['prnc']
-        # P that this token is NOT of this category
-        prtnc = (token_tally - token_score) / token_tally
-        # P that this token IS of this category
-        prtc = token_score / token_tally
+        # Laplace smoothing: add alpha to avoid zero probabilities
+        # (token_in_cat, token_not_in_cat) -> k=2 for binary view per token
+        if self.alpha > 0:
+            prtc = (token_score + self.alpha) / (token_tally + 2.0 * self.alpha)
+            prtnc = (token_tally - token_score + self.alpha) / (
+                token_tally + 2.0 * self.alpha
+            )
+        else:
+            prtnc = (token_tally - token_score) / token_tally
+            prtc = token_score / token_tally
 
         # Assembling the parts of the bayes equation
         numerator = prtc * prc

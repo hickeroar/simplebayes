@@ -15,6 +15,6 @@ repos:
 
       - id: pylint
         name: pylint
-        entry: pylint simplebayes tests --exit-zero
+        entry: pylint simplebayes tests --fail-under=10
         language: system
         pass_filenames: false

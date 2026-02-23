@@ -2,6 +2,25 @@
 
 All notable changes to this project are documented here.
 
+## v3.1.0
+
+### Added
+- Classifier options for `SimpleBayes`:
+  - `alpha` – Laplace smoothing. Use `0.01` or `1.0` to avoid zero probabilities for tokens unseen in a category; improves handling of sparse vocabularies. Default `0` preserves prior behavior.
+  - `language` – Language code for stemmer and stop words (e.g. `"english"`, `"spanish"`, `"french"`). All Snowball languages supported. Default `"english"`.
+  - `remove_stop_words` – Filter common stop words when `True`. Default `False` for backwards compatibility.
+- Built-in stopword lists for every Snowball language (Arabic, Armenian, Basque, Catalan, Danish, Dutch, English, Esperanto, Estonian, Finnish, French, German, Greek, Hindi, Hungarian, Indonesian, Irish, Italian, Lithuanian, Nepali, Norwegian, Portuguese, Romanian, Russian, Serbian, Spanish, Swedish, Tamil, Turkish, Yiddish). No download or file storage required.
+- `create_tokenizer(language, remove_stop_words)` – factory for language-aware tokenizers.
+- API: Bearer auth integrated with OpenAPI docs. `/docs` and `/redoc` expose the Bearer scheme; use the "Authorize" button in Swagger UI for interactive testing.
+- `UnauthorizedError` – domain exception for Bearer auth failures; produces 401 with `WWW-Authenticate` header.
+
+### Changed
+- Tokenizer pipeline: `language` drives both stemming and stop-word filtering. When `remove_stop_words=True`, stop words are filtered after stemming.
+- Laplace smoothing applied in probability calculations when `alpha > 0`.
+- API routes refactored to use FastAPI `Depends` for auth, classifier, and readiness state.
+- README: Classifier Options table, Tokenization section, Bearer auth docs.
+- Pylint: `--fail-under=10` in CONTRIBUTING and README.
+
 ## v3.0.0
 
 ### Breaking

@@ -2,6 +2,10 @@ class SimpleBayesError(Exception):
     """Base exception for simplebayes domain errors."""
 
 
+class UnauthorizedError(SimpleBayesError):
+    """Raised when Bearer auth fails. Produces 401 with API-standard response format."""
+
+
 class InvalidCategoryError(SimpleBayesError):
     """Raised when a category value is invalid."""
 

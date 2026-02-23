@@ -59,6 +59,8 @@ When `--auth-token` is configured, all API endpoints except `/healthz` and `/rea
 Authorization: Bearer <token>
 ```
 
+The API uses HTTP Bearer authentication. When auth is enabled, OpenAPI docs at `/docs` and `/redoc` expose the Bearer scheme; use the "Authorize" button in Swagger UI to set the token for interactive testing.
+
 ## Use as a Library in Your App
 
 Import and create a classifier:
@@ -66,6 +68,7 @@ Import and create a classifier:
 from simplebayes import SimpleBayes
 
 classifier = SimpleBayes()
+# Optional: SimpleBayes(alpha=0.01, language="english", remove_stop_words=True) to filter stop words
 
 classifier.train("spam", "buy now limited offer click here")
 classifier.train("ham", "team meeting schedule for tomorrow")
@@ -93,11 +96,41 @@ loaded.load_from_file("/tmp/simplebayes-model.json")
 print(loaded.classify_result("limited offer today"))
 ```
 
+Custom options example:
+```python
+# Laplace smoothing for better handling of unseen tokens
+classifier = SimpleBayes(alpha=0.01)
+
+# Spanish text with Spanish stemmer and stop words
+classifier = SimpleBayes(language="spanish", remove_stop_words=True)
+
+# Opt-in stop-word removal
+classifier = SimpleBayes(remove_stop_words=True)
+```
+
 Notes for library usage:
 - Classifier operations are thread-safe.
 - Scores are relative values; compare scores within the same model.
-- Default tokenization applies Unicode NFKC normalization, lowercasing, non-word splitting, and English stemming.
 - Category names accepted by `train`/`untrain` match `^[-_A-Za-z0-9]{1,64}$`.
+
+### Classifier Options
+
+| Parameter | Default | Description |
+| --- | --- | --- |
+| `tokenizer` | built-in | Override with a callable `(str) -> list[str]`. |
+| `alpha` | `0.0` | Laplace smoothing. Use `0.01` or `1.0` to avoid zero probabilities for tokens unseen in a category; improves handling of sparse vocabularies. |
+| `language` | `"english"` | Language code for both the Snowball stemmer and built-in stop words. Supported: `arabic`, `armenian`, `basque`, `catalan`, `danish`, `dutch`, `english`, `esperanto`, `estonian`, `finnish`, `french`, `german`, `greek`, `hindi`, `hungarian`, `indonesian`, `irish`, `italian`, `lithuanian`, `nepali`, `norwegian`, `portuguese`, `romanian`, `russian`, `serbian`, `spanish`, `swedish`, `tamil`, `turkish`, `yiddish`. |
+| `remove_stop_words` | `False` | Filter common stop words when `True` (the, is, and, etc.). Default `False` for backwards compatibility. |
+
+### Tokenization
+
+Default tokenization (when no custom `tokenizer` is provided):
+1. Unicode NFKC normalization and lowercasing
+2. Split on non-word characters
+3. Snowball stemming (language from `language` param)
+4. Stop-word removal when `remove_stop_words=True`
+
+The `language` parameter drives both stemming and stop-word filtering. Built-in stopword lists are included for all supported languages: arabic, armenian, basque, catalan, danish, dutch, english, esperanto, estonian, finnish, french, german, greek, hindi, hungarian, indonesian, irish, italian, lithuanian, nepali, norwegian, portuguese, romanian, russian, serbian, spanish, swedish, tamil, turkish, yiddish. No download or file storage required.
 
 Stream APIs are available:
 - `save(stream)`
@@ -111,7 +144,7 @@ File API notes:
 ```
 $ ./.venv/bin/pytest tests/ --cov=simplebayes --cov-fail-under=100 -v
 $ ./.venv/bin/flake8 simplebayes tests
-$ ./.venv/bin/pylint simplebayes tests --exit-zero
+$ ./.venv/bin/pylint simplebayes tests --fail-under=10
 ```
 
 ---
