@@ -1,5 +1,5 @@
 # coding: utf-8
-__version__ = '3.1.0'
+__version__ = '3.1.1'
 
 import threading
 from collections import Counter
