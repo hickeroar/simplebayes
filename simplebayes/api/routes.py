@@ -1,3 +1,4 @@
+import sys
 import secrets
 from typing import Dict
 
@@ -24,6 +25,20 @@ def _get_classifier(request: Request) -> SimpleBayes:
 
 def _get_readiness(request: Request) -> ReadinessState:
     return request.app.state.readiness
+
+
+def _log_verbose(request: Request, *parts: str) -> None:
+    """Log to stderr when verbose mode is enabled."""
+    if getattr(request.app.state, "verbose", False):
+        print("[simplebayes]", *parts, file=sys.stderr)
+
+
+def _format_tokens(tokens: list) -> str:
+    """Format token list, truncating if long."""
+    max_show = 20
+    if len(tokens) <= max_show:
+        return str(tokens)
+    return str(tokens[:max_show]) + "..."
 
 
 MAX_REQUEST_BODY_BYTES = 1024 * 1024
@@ -75,19 +90,28 @@ def _parse_payload(payload: bytes) -> tuple[str, JSONResponse | None]:
         )
 
 
-def create_router(auth_token: str = "") -> APIRouter:
+def create_router(auth_token: str = "", verbose: bool = False) -> APIRouter:
     router = APIRouter()
     verify_auth = _create_auth_dependency(auth_token)
 
     @router.get("/info", response_model=InfoResponse)
     def info(
+        request: Request,
         _auth: None = Depends(verify_auth),
         classifier: SimpleBayes = Depends(_get_classifier),
     ):
-        return InfoResponse(categories=_map_summaries(classifier))
+        result = InfoResponse(categories=_map_summaries(classifier))
+        _log_verbose(
+            request,
+            "info:",
+            "categories=",
+            str(list(result.categories.keys())),
+        )
+        return result
 
     @router.post("/train/{category}", response_model=MutationResponse)
     def train(
+        request: Request,
         _auth: None = Depends(verify_auth),
         classifier: SimpleBayes = Depends(_get_classifier),
         category: str = Path(..., pattern=CATEGORY_REGEX),
@@ -97,11 +121,24 @@ def create_router(auth_token: str = "") -> APIRouter:
         if payload_response is not None:
             return payload_response
 
+        tokens = classifier.tokenizer(text)
         classifier.train(category, text)
-        return MutationResponse(success=True, categories=_map_summaries(classifier))
+        summaries = _map_summaries(classifier)
+        _log_verbose(
+            request,
+            "train:",
+            "category=",
+            category,
+            "tokens=",
+            _format_tokens(tokens),
+            "summaries=",
+            str({k: v.tokenTally for k, v in summaries.items()}),
+        )
+        return MutationResponse(success=True, categories=summaries)
 
     @router.post("/untrain/{category}", response_model=MutationResponse)
     def untrain(
+        request: Request,
         _auth: None = Depends(verify_auth),
         classifier: SimpleBayes = Depends(_get_classifier),
         category: str = Path(..., pattern=CATEGORY_REGEX),
@@ -111,11 +148,24 @@ def create_router(auth_token: str = "") -> APIRouter:
         if payload_response is not None:
             return payload_response
 
+        tokens = classifier.tokenizer(text)
         classifier.untrain(category, text)
-        return MutationResponse(success=True, categories=_map_summaries(classifier))
+        summaries = _map_summaries(classifier)
+        _log_verbose(
+            request,
+            "untrain:",
+            "category=",
+            category,
+            "tokens=",
+            _format_tokens(tokens),
+            "summaries=",
+            str({k: v.tokenTally for k, v in summaries.items()}),
+        )
+        return MutationResponse(success=True, categories=summaries)
 
     @router.post("/classify", response_model=ClassificationResponse)
     def classify(
+        request: Request,
         _auth: None = Depends(verify_auth),
         classifier: SimpleBayes = Depends(_get_classifier),
         payload: bytes = Body(b"", media_type="text/plain"),
@@ -124,11 +174,23 @@ def create_router(auth_token: str = "") -> APIRouter:
         if payload_response is not None:
             return payload_response
 
+        tokens = classifier.tokenizer(text)
         result = classifier.classify_result(text)
+        _log_verbose(
+            request,
+            "classify:",
+            "tokens=",
+            _format_tokens(tokens),
+            "category=",
+            str(result.category),
+            "score=",
+            str(result.score),
+        )
         return ClassificationResponse(category=result.category, score=result.score)
 
     @router.post("/score")
     def score(
+        request: Request,
         _auth: None = Depends(verify_auth),
         classifier: SimpleBayes = Depends(_get_classifier),
         payload: bytes = Body(b"", media_type="text/plain"),
@@ -137,10 +199,21 @@ def create_router(auth_token: str = "") -> APIRouter:
         if payload_response is not None:
             return payload_response
 
-        return classifier.score(text)
+        tokens = classifier.tokenizer(text)
+        scores = classifier.score(text)
+        _log_verbose(
+            request,
+            "score:",
+            "tokens=",
+            _format_tokens(tokens),
+            "scores=",
+            str(scores),
+        )
+        return scores
 
     @router.post("/flush", response_model=MutationResponse)
     def flush(
+        request: Request,
         _auth: None = Depends(verify_auth),
         classifier: SimpleBayes = Depends(_get_classifier),
         payload: bytes = Body(b"", media_type="text/plain"),
@@ -150,6 +223,7 @@ def create_router(auth_token: str = "") -> APIRouter:
             return payload_response
 
         classifier.flush()
+        _log_verbose(request, "flush: Flushed all categories")
         return MutationResponse(success=True, categories=_map_summaries(classifier))
 
     @router.get("/healthz")

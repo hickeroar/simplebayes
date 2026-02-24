@@ -42,9 +42,13 @@ $ simplebayes-server --port 8000
 
 CLI options:
 ```
---host        Host interface to bind. (default: 0.0.0.0)
---port        Port to bind. (default: 8000)
---auth-token  Optional bearer token for non-probe endpoints.
+--host              Host interface to bind. (default: 0.0.0.0)
+--port              Port to bind. (default: 8000)
+--auth-token        Optional bearer token for non-probe endpoints.
+--language          Language code for stemmer and stop words. (default: english)
+--remove-stop-words Filter common stop words (the, is, and, etc.).
+--verbose           Log requests, responses, and classifier operations to stderr.
+--help              Show all options.
 ```
 
 Environment variable equivalents:
@@ -52,6 +56,15 @@ Environment variable equivalents:
 SIMPLEBAYES_HOST
 SIMPLEBAYES_PORT
 SIMPLEBAYES_AUTH_TOKEN
+SIMPLEBAYES_LANGUAGE
+SIMPLEBAYES_REMOVE_STOP_WORDS   (1, true, yes = enabled)
+SIMPLEBAYES_VERBOSE             (1, true, yes = enabled)
+```
+
+### Verbose mode
+When `--verbose` is set, the server logs each request and response to stderr, plus classifier insight: tokens extracted, category operations, scores, and summaries. Example:
+```
+$ simplebayes-server --port 8000 --verbose
 ```
 
 When `--auth-token` is configured, all API endpoints except `/healthz` and `/readyz` require:

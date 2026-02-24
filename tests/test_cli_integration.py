@@ -35,6 +35,9 @@ def test_cli_module_help_exits_zero():
     )
     assert result.returncode == 0
     assert "Run the simplebayes API server." in result.stdout
+    assert "language" in result.stdout
+    assert "remove-stop-words" in result.stdout
+    assert "verbose" in result.stdout
 
 
 def test_cli_module_fails_with_invalid_env_port():
