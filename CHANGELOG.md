@@ -2,6 +2,22 @@
 
 All notable changes to this project are documented here.
 
+## v3.2.0
+
+### Added
+- CLI options for `simplebayes-server`:
+  - `--language` – Language code for stemmer and stop words (default: `english`). Environment: `SIMPLEBAYES_LANGUAGE`.
+  - `--remove-stop-words` – Filter common stop words. Environment: `SIMPLEBAYES_REMOVE_STOP_WORDS` (`1`, `true`, `yes` = enabled).
+  - `--verbose` – Log requests, responses, and classifier operations to stderr. Environment: `SIMPLEBAYES_VERBOSE` (`1`, `true`, `yes` = enabled).
+- Verbose mode: request/response middleware logs method, path, Content-Length, status code, and body preview (truncated at 500 chars) to stderr with `[simplebayes]` prefix.
+- Verbose mode: classifier insight for each endpoint – tokens extracted, category operations, scores, and summaries (token lists truncated at 20 items).
+- `create_app(language, remove_stop_words, verbose)` – API app factory now accepts classifier and logging options.
+- `--help` documents all CLI arguments.
+
+### Changed
+- API classifier is now configured from CLI `--language` and `--remove-stop-words` instead of using fixed defaults.
+- README: CLI options table, environment variable equivalents, and Verbose mode subsection.
+
 ## v3.1.1
 
 ### Changed

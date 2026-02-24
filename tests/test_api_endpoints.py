@@ -238,3 +238,102 @@ def test_payload_too_large_for_each_text_endpoint(path):
     )
     assert response.status_code == 413
     assert response.json() == {"error": "request body too large"}
+
+
+def test_create_app_with_language_spanish():
+    """Spanish stemmer produces different tokens than English (e.g. comprar vs buy)."""
+    app = create_app(language="spanish")
+    client = TestClient(app)
+    headers = {"Content-Type": "text/plain"}
+    client.post("/train/spam", content="comprar ahora oferta limitada", headers=headers)
+    info = client.get("/info").json()
+    assert "spam" in info["categories"]
+    assert info["categories"]["spam"]["tokenTally"] > 0
+    score = client.post("/score", content="comprar oferta", headers=headers).json()
+    assert "spam" in score
+
+
+def test_create_app_with_remove_stop_words():
+    """Stop words like 'the' and 'is' are filtered when remove_stop_words=True."""
+    app = create_app(remove_stop_words=True)
+    client = TestClient(app)
+    headers = {"Content-Type": "text/plain"}
+    client.post("/train/spam", content="the buy now the offer", headers=headers)
+    client.post("/train/ham", content="the meeting is tomorrow", headers=headers)
+    info = client.get("/info").json()
+    assert "spam" in info["categories"]
+    assert "ham" in info["categories"]
+    classify = client.post("/classify", content="the offer", headers=headers).json()
+    assert classify["category"] == "spam"
+
+
+def test_verbose_mode_logs_to_stderr(capsys):
+    app = create_app(verbose=True)
+    client = TestClient(app)
+    headers = {"Content-Type": "text/plain"}
+    client.post("/train/spam", content="buy now", headers=headers)
+    captured = capsys.readouterr()
+    assert "[simplebayes]" in captured.err
+    assert "POST" in captured.err or "train" in captured.err
+    assert "spam" in captured.err
+    assert "tokens=" in captured.err
+
+
+def test_verbose_mode_off_no_output(capsys):
+    app = create_app(verbose=False)
+    client = TestClient(app)
+    headers = {"Content-Type": "text/plain"}
+    client.post("/train/spam", content="buy now", headers=headers)
+    captured = capsys.readouterr()
+    assert "[simplebayes]" not in captured.err
+
+
+def test_verbose_middleware_content_length_branch(capsys):
+    """Hit the Content-Length branch: GET has no body, POST has Content-Length."""
+    app = create_app(verbose=True)
+    client = TestClient(app)
+    client.get("/healthz")
+    captured = capsys.readouterr()
+    assert "[simplebayes]" in captured.err
+    assert "GET" in captured.err
+
+
+def test_verbose_middleware_exception_branch(capsys):
+    """Hit the exception branch by simulating a route that raises."""
+    app = create_app(verbose=True)
+
+    async def raise_handler(request):
+        raise RuntimeError("test")
+
+    app.add_route("/raise", raise_handler, methods=["GET"])
+    client = TestClient(app)
+    with pytest.raises(RuntimeError):
+        client.get("/raise")
+    captured = capsys.readouterr()
+    assert "[simplebayes]" in captured.err
+    assert "(exception)" in captured.err
+
+
+def test_verbose_middleware_large_response_body(capsys):
+    """Hit the body truncation branch when response > 500 chars."""
+    app = create_app(verbose=True)
+    client = TestClient(app)
+    headers = {"Content-Type": "text/plain"}
+    for i in range(25):
+        client.post(f"/train/cat{i}", content=f"word{i} x y z", headers=headers)
+    client.get("/info")
+    captured = capsys.readouterr()
+    assert "[simplebayes]" in captured.err
+    assert "..." in captured.err
+
+
+def test_verbose_format_tokens_truncation(capsys):
+    """Hit _format_tokens truncation when > 20 tokens."""
+    app = create_app(verbose=True)
+    client = TestClient(app)
+    headers = {"Content-Type": "text/plain"}
+    long_text = " ".join(f"word{i}" for i in range(25))
+    client.post("/train/spam", content=long_text, headers=headers)
+    captured = capsys.readouterr()
+    assert "[simplebayes]" in captured.err
+    assert "..." in captured.err

@@ -21,9 +21,9 @@ author = 'Ryan Vennell'
 
 try:
     import simplebayes
-    version = getattr(simplebayes, '__version__', '3.1.1')
+    version = getattr(simplebayes, '__version__', '3.2.0')
 except ImportError:
-    version = '3.1.1'
+    version = '3.2.0'
 release = version
 
 language = 'en'
